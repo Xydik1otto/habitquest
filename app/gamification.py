@@ -1,0 +1,171 @@
+"""Pure gamification logic: XP, levels, streaks, freezes, achievements.
+
+Everything here operates on plain dates/sets so it is unit-testable
+without HTTP or the database.
+"""
+from __future__ import annotations
+
+from datetime import date, timedelta
+
+BASE_XP = 10
+STREAK_CAP = 30  # multiplier caps at streak 30
+FREEZE_WEEKLY_LIMIT = 1
+
+
+# --- XP & levels -----------------------------------------------------------
+def xp_for_checkin(streak_len: int, base: int = BASE_XP) -> int:
+    """XP for a check-in with the streak multiplier (1 + min(streak,30)*0.1)."""
+    multiplier = 1 + min(max(streak_len, 0), STREAK_CAP) * 0.1
+    return round(base * multiplier)
+
+
+def xp_to_reach_level(level: int) -> int:
+    """Cumulative XP needed to *be* at `level` (level 1 = 0 XP)."""
+    n = level - 1
+    return 50 * n * (n + 1) // 2
+
+
+def level_for_xp(xp: int) -> int:
+    """Highest level whose threshold is <= xp."""
+    level = 1
+    while xp_to_reach_level(level + 1) <= xp:
+        level += 1
+    return level
+
+
+def level_progress(xp: int) -> dict:
+    """Current level, XP within the level and XP needed for the next one."""
+    level = level_for_xp(xp)
+    base = xp_to_reach_level(level)
+    nxt = xp_to_reach_level(level + 1)
+    return {"level": level, "xp": xp, "xp_in_level": xp - base, "xp_for_next": nxt - base}
+
+
+# --- streaks -----------------------------------------------------------------
+def compute_streak(
+    checkin_dates: set[str],
+    freezes: set[str] = frozenset(),  # type: ignore[assignment]
+    today: date | None = None,
+) -> int:
+    """Current daily streak. Freeze days are skipped without breaking it.
+
+    If today has no check-in yet, the count starts from yesterday (today's
+    pending check-in must not zero the streak).
+    """
+    today = today or date.today()
+    freezes = set(freezes)
+    d = today if today.isoformat() in checkin_dates else today - timedelta(days=1)
+    streak = 0
+    while True:
+        iso = d.isoformat()
+        if iso in checkin_dates:
+            streak += 1
+        elif iso in freezes:
+            pass  # frozen day: excused, does not break the streak
+        else:
+            break
+        d -= timedelta(days=1)
+    return streak
+
+
+def compute_streak_weekly(checkin_dates: set[str], target: int, today: date | None = None) -> int:
+    """Consecutive ISO weeks with >= target check-ins, counting back from this week."""
+    today = today or date.today()
+    year, week, _ = today.isocalendar()
+    streak = 0
+    for _ in range(520):  # safety bound: 10 years
+        week_dates = {d.isoformat() for d in iso_dates_of_week(year, week) if d.isoformat() in checkin_dates}
+        if len(week_dates) >= target:
+            streak += 1
+        else:
+            break
+        # step back one ISO week
+        monday = date.fromisocalendar(year, week, 1) - timedelta(days=7)
+        year, week, _ = monday.isocalendar()
+    return streak
+
+
+def iso_dates_of_week(year: int, week: int) -> list[date]:
+    monday = date.fromisocalendar(year, week, 1)
+    return [monday + timedelta(days=i) for i in range(7)]
+
+
+# --- achievements -------------------------------------------------------------
+ACHIEVEMENTS = [
+    {"id": "first_checkin", "name": "Перший крок", "description": "Перший чек-ін"},
+    {"id": "first_week", "name": "Перший тиждень", "description": "Серія 7 днів"},
+    {"id": "thirty_days", "name": "Місяць дисципліни", "description": "Серія 30 днів"},
+    {"id": "comeback", "name": "Повернення", "description": "Чек-ін після паузи ≥3 днів"},
+]
+
+
+def evaluate_achievements(
+    streak: int,
+    total_checkins: int,
+    last_gap_days: int | None,
+) -> list[str]:
+    """Return ids of achievements earned given the current stats."""
+    earned: list[str] = []
+    if total_checkins >= 1:
+        earned.append("first_checkin")
+    if streak >= 7:
+        earned.append("first_week")
+    if streak >= 30:
+        earned.append("thirty_days")
+    if last_gap_days is not None and last_gap_days >= 3:
+        earned.append("comeback")
+    return earned
+
+
+def last_gap_days(checkin_dates: set[str], today: date | None = None) -> int | None:
+    """Gap in days between the two most recent check-ins (None if <2)."""
+    if len(checkin_dates) < 2:
+        return None
+    today = today or date.today()
+    ds = sorted(date.fromisoformat(d) for d in checkin_dates)
+    if ds[-1] > today:  # future dates are a data error; ignore
+        ds = [d for d in ds if d <= today]
+        if len(ds) < 2:
+            return None
+    return (ds[-1] - ds[-2]).days
+
+
+# --- heat map -----------------------------------------------------------------
+def week_grid(checkin_dates: set[str], weeks: int, today: date | None = None) -> dict:
+    """Weeks × 7 grid of check-in counts for the SVG heatmap.
+
+    Returns {"weeks": [iso-monday...], "weekdays": [0..6], "cells": {monday: [7 counts]}}
+    """
+    today = today or date.today()
+    year, week, _ = today.isocalendar()
+    cells: dict[str, list[int]] = {}
+    labels: list[str] = []
+    for _ in range(weeks):
+        dates = iso_dates_of_week(year, week)
+        labels.append(dates[0].isoformat())
+        counts = [1 if d.isoformat() in checkin_dates else 0 for d in dates]
+        cells[dates[0].isoformat()] = counts
+        monday = dates[0] - timedelta(days=7)
+        year, week, _ = monday.isocalendar()
+    return {"weeks": list(reversed(labels)), "weekdays": list(range(7)),
+            "cells": {w: cells[w] for w in reversed(labels)}}
+
+
+def completion_rate_30d(checkin_dates: set[str], today: date | None = None) -> float:
+    """Share of the last 30 days (incl. today) with at least one check-in."""
+    today = today or date.today()
+    days = [(today - timedelta(days=i)).isoformat() for i in range(30)]
+    hit = sum(1 for d in days if d in checkin_dates)
+    return round(hit / 30, 3)
+
+
+def longest_streak(checkin_dates: set[str]) -> int:
+    """Longest run of consecutive days ever recorded."""
+    if not checkin_dates:
+        return 0
+    ds = sorted(date.fromisoformat(d) for d in checkin_dates)
+    best = cur = 1
+    for prev, cur_d in zip(ds, ds[1:]):
+        cur = cur + 1 if (cur_d - prev).days == 1 else 1
+        best = max(best, cur)
+    return best

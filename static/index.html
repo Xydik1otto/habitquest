@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>habitquest</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <h1>⚔️ HabitQuest</h1>
+  <div id="player-bar">
+    <span id="level-badge"></span>
+    <div id="xp-bar"><div id="xp-fill"></div></div>
+    <span id="xp-text"></span>
+  </div>
+</header>
+
+<main>
+  <section class="panel">
+    <h2>Сьогодні</h2>
+    <div id="day-list"></div>
+    <form id="new-habit">
+      <input id="h-name" placeholder="Нова звичка…" required maxlength="80">
+      <input id="h-icon" value="✅" maxlength="4" title="Емодзі-іконка">
+      <select id="h-schedule">
+        <option value="daily">Щодня</option>
+        <option value="weekly">Щотижня</option>
+      </select>
+      <input id="h-target" type="number" min="1" max="7" value="1" title="Ціль за період">
+      <button type="submit">Додати</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h2>Тиждень (heatmap)</h2>
+    <div id="week-heatmap"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Статистика</h2>
+    <div id="stats"></div>
+    <div class="portability">
+      <button id="btn-export">⬇ Export JSON</button>
+      <label>⬆ Import <input type="file" id="import-file" accept="application/json" hidden></label>
+    </div>
+    <div id="achievements"></div>
+  </section>
+</main>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

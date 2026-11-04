@@ -1,0 +1,30 @@
+:root { --bg:#12121a; --card:#1c1c28; --fg:#eee; --gold:#f5c542; --fire:#ff7043; --ok:#7bd88f; }
+* { box-sizing:border-box; }
+body { margin:0; font-family:system-ui,sans-serif; background:var(--bg); color:var(--fg); }
+header { display:flex; align-items:center; gap:18px; padding:12px 20px; border-bottom:1px solid #2a2a3a; }
+header h1 { margin:0; font-size:1.2rem; }
+#player-bar { display:flex; align-items:center; gap:10px; flex:1; }
+#level-badge { background:var(--gold); color:#222; font-weight:700; border-radius:8px; padding:3px 10px; }
+#xp-bar { flex:1; max-width:320px; height:10px; background:#2a2a3a; border-radius:6px; overflow:hidden; }
+#xp-fill { height:100%; background:linear-gradient(90deg,#f5c542,#ff7043); width:0; }
+#xp-text { font-size:.8rem; color:#999; }
+main { padding:16px 20px; display:grid; gap:16px; max-width:900px; }
+.panel { background:var(--card); border:1px solid #2a2a3a; border-radius:12px; padding:16px; }
+.panel h2 { margin:0 0 12px; font-size:1rem; color:#bbb; text-transform:uppercase; letter-spacing:.05em; }
+.habit-row { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid #26263a; }
+.habit-row:last-child { border-bottom:none; }
+.habit-row .icon { font-size:1.3rem; }
+.habit-row .name { flex:1; }
+.habit-row .streak { color:var(--fire); font-weight:600; }
+.habit-row .frozen { color:#61afef; }
+.habit-row .meta { color:#888; font-size:.8rem; }
+input, select, button { background:#26263a; color:var(--fg); border:1px solid #3a3a52; border-radius:6px; padding:7px 10px; }
+button { cursor:pointer; }
+button.primary, #new-habit button { background:var(--gold); color:#222; border:none; font-weight:600; }
+#new-habit { display:flex; gap:8px; margin-top:12px; }
+#new-habit input[type=number] { width:70px; }
+#week-heatmap { overflow-x:auto; }
+.wk-label { font-size:9px; fill:#888; }
+.portability { margin-top:12px; display:flex; gap:8px; align-items:center; }
+.achv { display:inline-block; background:#26263a; border-radius:8px; padding:4px 10px; margin:4px 4px 0 0; font-size:.8rem; }
+.achv.locked { opacity:.35; }
