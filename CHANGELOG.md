@@ -7,6 +7,12 @@
 
 ## [Unreleased]
 
+### Added
+- **Мобільні порти (Capacitor 6)**: `android/` (minSdk 24, target 35) та `ios/`
+  (target 14) — оболонка, що підключається до власного сервера (splash з полем
+  «Адреса сервера», збереження в Preferences); CI-збірка APK (android-build.yml)
+  та unsigned iOS ZIP (ios-build.yml); `MOBILE.md` з гайдами sideload/AltStore/Tailscale.
+
 ### Removed
 - Монетизаційний каркас: `.github/FUNDING.yml`, усі згадки «Pro Pack» (тепер
   «кастомні досягнення»), секцію монетизації в PLAN.md. Проєкт — 100% безкоштовний

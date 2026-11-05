@@ -108,6 +108,14 @@ pytest              # 179 tests
 - [ ] v1.1: icon editor, dark/light theme, yearly heatmaps
 - [ ] v1.2: yearly reports, extra themes — free roadmap: all features are open-source
 
+## 📱 Mobile apps
+
+Android and iOS ports on Capacitor 6 — a shell that connects to your own
+self-hosted server (address entered on first launch, Tailscale guide included).
+The APK is built in CI on every push and attached to Releases on a tag; iOS is an
+unsigned ZIP for AltStore/Sideloadly (the App Store requires $99/year — out of
+budget). Details: **[MOBILE.md](MOBILE.md)**.
+
 ## Contributing
 
 The project is open-source (MIT). Contributor guide: [CONTRIBUTING.md](CONTRIBUTING.md);

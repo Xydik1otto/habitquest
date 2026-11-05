@@ -108,6 +108,14 @@ pytest           # 179 тестів
 - [ ] v1.1: іконки-редактор, темна/світла тема, річні heatmap-и
 - [ ] v1.2: річні звіти, додаткові теми — Roadmap безкоштовний: усі фічі open-source
 
+## 📱 Мобільні застосунки
+
+Android та iOS порти на Capacitor 6 — оболонка, що підключається до вашого
+самохостед-сервера (адреса вводиться при першому запуску, Tailscale-гайд
+включено). APK збирається в CI на кожен push і додається до Releases на тег;
+iOS — unsigned ZIP для AltStore/Sideloadly (App Store вимагає $99/рік — не в
+бюджеті). Деталі: **[MOBILE.md](MOBILE.md)**.
+
 ## Contributing / Розробка
 
 Проєкт open-source (MIT). Інструкція для учасників — [CONTRIBUTING.md](CONTRIBUTING.md);
