@@ -1,7 +1,7 @@
 """Service layer: orchestrates check-ins, freezes, XP and achievements."""
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 
 from . import db, gamification as g
 
@@ -163,6 +163,23 @@ def use_freeze(database: db.Database, habit_id: int, day: str | None = None, tod
         raise ValueError("no freeze left this week — buy a streak shield in the shop")
     ok = database.add_freeze(habit_id, day)
     return {"habit_id": habit_id, "date": day, "frozen": ok, "source": "weekly"}
+
+
+def streak_series(database: db.Database, habit_id: int, days: int = 30, today: date | None = None) -> dict:
+    """Per-day check-in counts for the last `days` days (SVG streak chart source)."""
+    habit = database.get_habit(habit_id)
+    if habit is None:
+        raise ValueError(f"unknown habit {habit_id}")
+    if not isinstance(days, int) or isinstance(days, bool) or not 1 <= days <= 365:
+        raise ValueError("days must be between 1 and 365")
+    today = today or date.today()
+    dates = database.checkin_dates(habit_id)
+    series = []
+    for i in range(days - 1, -1, -1):
+        iso = (today - timedelta(days=i)).isoformat()
+        series.append({"date": iso, "count": 1 if iso in dates else 0})
+    return {"habit_id": habit_id, "days": days, "series": series,
+            "streak": _habit_streak(database, habit, today=today)}
 
 
 # --- streak shield shop -------------------------------------------------------

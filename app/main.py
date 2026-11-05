@@ -145,6 +145,15 @@ def shop_buy(payload: BuyIn) -> dict:
         raise HTTPException(400, str(e))
 
 
+@app.get("/api/habits/{habit_id}/series")
+def habit_series(habit_id: int, days: int = 30) -> dict:
+    try:
+        return service.streak_series(get_db(), habit_id, days)
+    except ValueError as e:
+        msg = str(e)
+        raise HTTPException(404 if "unknown habit" in msg else 400, msg)
+
+
 @app.get("/api/heatmap")
 def heatmap(weeks: int = 12) -> dict:
     dates = get_db().checkin_dates()

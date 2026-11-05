@@ -66,8 +66,41 @@ function renderDay(habits) {
     del.textContent = "✕";
     del.addEventListener("click", async () => { await api(`/api/habits/${h.id}`, { method: "DELETE" }); load(); });
     row.append(del);
+    const chartBtn = document.createElement("button");
+    chartBtn.textContent = "📈";
+    chartBtn.title = "Графік серії за 30 днів";
+    chartBtn.addEventListener("click", async () => {
+      let panel = row.nextElementSibling;
+      if (panel && panel.classList.contains("streak-chart")) { panel.remove(); return; }
+      panel = document.createElement("div");
+      panel.className = "streak-chart";
+      row.after(panel);
+      panel.textContent = "…";
+      try { panel.innerHTML = streakChartSVG(await api(`/api/habits/${h.id}/series?days=30`)); }
+      catch (e) { panel.textContent = e.message; }
+    });
+    row.append(chartBtn);
     list.appendChild(row);
   }
+}
+
+// ---------- 30-day streak chart (SVG) ----------
+function streakChartSVG(data) {
+  const cell = 10, gap = 2, h = 46, labelW = 4;
+  const w = labelW + data.series.length * (cell + gap);
+  let svg = `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg" class="streak-svg">`;
+  data.series.forEach((p, i) => {
+    const x = labelW + i * (cell + gap);
+    const filled = p.count > 0;
+    const barH = filled ? h - 14 : 4;
+    svg += `<rect x="${x}" y="${h - 14 - barH}" width="${cell}" height="${barH}" rx="2"
+      fill="${filled ? "var(--ok)" : "#26263a"}"><title>${p.date}: ${filled ? "виконано" : "—"}</title></rect>`;
+    if (i === data.series.length - 1) {
+      svg += `<text x="${x - 8}" y="${h - 2}" font-size="8" class="wk-label">сьогодні</text>`;
+    }
+  });
+  svg += `</svg><div class="streak-chart-meta">🔥 серія: <b>${data.streak}</b> · ${data.days} дн.</div>`;
+  return svg;
 }
 
 // ---------- boss battle (monthly quests) ----------
