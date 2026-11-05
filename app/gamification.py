@@ -24,6 +24,7 @@ WEEKLY_QUEST_REWARD = 150  # coin reward for completing the weekly quest
 DEFAULT_SETTINGS = {"sound": True, "effects": True}
 
 ACHIEVEMENTS_FILE = Path(__file__).resolve().parent / "achievements.json"
+TEMPLATES_FILE = Path(__file__).resolve().parent / "templates.json"
 
 
 def month_key(d: date) -> str:
@@ -254,6 +255,47 @@ def evaluate_custom_achievements(
         if metrics[d["metric"]] >= d["threshold"]:
             earned.append(d["id"])
     return earned
+
+
+# --- habit templates (New Year onboarding library) ------------------------------
+_VALID_SCHEDULES = ("daily", "weekly")
+
+
+def validate_template(t: dict) -> None:
+    """Raise ValueError if a habit template is malformed."""
+    if not isinstance(t, dict):
+        raise ValueError("template must be an object")
+    for key in ("id", "icon", "name_ua", "name_en", "category", "schedule", "target_per_period"):
+        if key not in t:
+            raise ValueError(f"template missing '{key}'")
+    if not isinstance(t["id"], str) or not t["id"]:
+        raise ValueError("template 'id' must be a non-empty string")
+    if not isinstance(t["icon"], str) or not t["icon"]:
+        raise ValueError("template 'icon' must be a non-empty string")
+    for key in ("name_ua", "name_en"):
+        if not isinstance(t[key], str) or not t[key]:
+            raise ValueError(f"template '{key}' must be a non-empty string")
+    if t["category"] not in CATEGORIES:
+        raise ValueError(f"unknown category {t['category']!r}; expected one of {CATEGORIES}")
+    if t["schedule"] not in _VALID_SCHEDULES:
+        raise ValueError(f"unknown schedule {t['schedule']!r}; expected one of {_VALID_SCHEDULES}")
+    if not isinstance(t["target_per_period"], int) or isinstance(t["target_per_period"], bool) \
+            or not 1 <= t["target_per_period"] <= 7:
+        raise ValueError("template 'target_per_period' must be 1..7")
+
+
+def load_templates(path: Path | None = None) -> list[dict]:
+    """Load the habit template library from JSON (built-ins by default)."""
+    data = json.loads(Path(path or TEMPLATES_FILE).read_text(encoding="utf-8"))
+    templates = data.get("templates", data) if isinstance(data, dict) else data
+    if not isinstance(templates, list):
+        raise ValueError("templates JSON must contain a list")
+    for t in templates:
+        validate_template(t)
+    ids = [t["id"] for t in templates]
+    if len(ids) != len(set(ids)):
+        raise ValueError("duplicate template id")
+    return templates
 
 
 # --- heat map -----------------------------------------------------------------

@@ -81,6 +81,24 @@ function renderCategoryFilter() {
     b.addEventListener("click", () => { activeCategory = b.dataset.cat || null; load(); }));
 }
 
+// ---------- habit templates library (one-click add) ----------
+function renderTemplates(templates) {
+  const el = $("#templates");
+  if (!el) return;
+  el.innerHTML = templates.map((t) =>
+    `<button class="tpl" data-tpl="${t.id}" title="${t.name_en} · ${CAT_LABELS[t.category]}">${t.icon} ${t.name_ua}</button>`
+  ).join("");
+  el.querySelectorAll("button.tpl").forEach((b) =>
+    b.addEventListener("click", async () => {
+      try {
+        await api("/api/habits/from-template", { method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ template_id: b.dataset.tpl }) });
+        blip();
+        load();
+      } catch (e) { alert(e.message); }
+    }));
+}
+
 // ---------- day view ----------
 function renderDay(habits) {
   const list = $("#day-list");
@@ -417,6 +435,7 @@ async function load() {
   renderPlayer(state.player);
   renderSettings();
   renderCategoryFilter();
+  renderTemplates(await api("/api/templates"));
   renderDay(state.habits);
   renderQuests(state.quests || [], state.habits);
   fillHabitSelects(state.habits);

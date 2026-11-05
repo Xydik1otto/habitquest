@@ -82,6 +82,24 @@ def create_habit(payload: HabitIn) -> dict:
     return {"id": hid}
 
 
+@app.get("/api/templates")
+def templates() -> dict:
+    return {"templates": g.load_templates()}
+
+
+class TemplateIn(BaseModel):
+    template_id: str = Field(min_length=1, max_length=64)
+    name: str | None = Field(default=None, max_length=80)
+
+
+@app.post("/api/habits/from-template")
+def habit_from_template(payload: TemplateIn) -> dict:
+    try:
+        return service.create_from_template(get_db(), payload.template_id, name=payload.name)
+    except ValueError as e:
+        raise HTTPException(404, str(e))
+
+
 @app.delete("/api/habits/{habit_id}")
 def delete_habit(habit_id: int) -> dict:
     get_db().delete_habit(habit_id)

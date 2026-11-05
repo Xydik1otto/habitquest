@@ -29,6 +29,11 @@ button.primary, #new-habit button { background:var(--gold); color:#222; border:n
 .achv { display:inline-block; background:#26263a; border-radius:8px; padding:4px 10px; margin:4px 4px 0 0; font-size:.8rem; }
 .achv.locked { opacity:.35; }
 
+/* --- habit templates --- */
+.templates { display:flex; gap:6px; flex-wrap:wrap; }
+button.tpl { font-size:.85rem; padding:5px 10px; opacity:.85; }
+button.tpl:hover { opacity:1; border-color:var(--gold); }
+
 /* --- boss battle --- */
 .boss { padding:10px 0; border-bottom:1px solid #26263a; }
 .boss:last-child { border-bottom:none; }

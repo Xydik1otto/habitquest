@@ -1,0 +1,25 @@
+{
+  "_comment": "Бібліотека шаблонів звичок (New Year onboarding). Поля: id, icon, name_ua, name_en, category (health|mind|work|home), schedule (daily|weekly), target_per_period.",
+  "templates": [
+    {"id": "water",        "icon": "💧", "name_ua": "Пити воду",              "name_en": "Drink water",            "category": "health", "schedule": "daily",  "target_per_period": 1},
+    {"id": "workout",      "icon": "🏋", "name_ua": "Тренування",             "name_en": "Workout",                "category": "health", "schedule": "daily",  "target_per_period": 1},
+    {"id": "steps",        "icon": "🚶", "name_ua": "10 000 кроків",          "name_en": "10,000 steps",           "category": "health", "schedule": "daily",  "target_per_period": 1},
+    {"id": "sleep",        "icon": "😴", "name_ua": "Сон 8 годин",            "name_en": "Sleep 8 hours",          "category": "health", "schedule": "daily",  "target_per_period": 1},
+    {"id": "stretching",   "icon": "🧘", "name_ua": "Розтяжка",               "name_en": "Stretching",             "category": "health", "schedule": "daily",  "target_per_period": 1},
+    {"id": "no_sugar",     "icon": "🍬", "name_ua": "День без цукру",         "name_en": "No sugar day",           "category": "health", "schedule": "daily",  "target_per_period": 1},
+    {"id": "floss",        "icon": "🦷", "name_ua": "Зубна нитка",            "name_en": "Floss",                  "category": "health", "schedule": "daily",  "target_per_period": 1},
+    {"id": "read",         "icon": "📚", "name_ua": "Читати 20 хвилин",       "name_en": "Read 20 minutes",        "category": "mind",   "schedule": "daily",  "target_per_period": 1},
+    {"id": "meditate",     "icon": "🕉", "name_ua": "Медитація 10 хвилин",    "name_en": "Meditate 10 minutes",    "category": "mind",   "schedule": "daily",  "target_per_period": 1},
+    {"id": "journal",      "icon": "📓", "name_ua": "Щоденник",               "name_en": "Journal",                "category": "mind",   "schedule": "daily",  "target_per_period": 1},
+    {"id": "vocab",        "icon": "🌱", "name_ua": "Вивчити 5 нових слів",   "name_en": "Learn 5 new words",      "category": "mind",   "schedule": "daily",  "target_per_period": 1},
+    {"id": "no_social",    "icon": "📵", "name_ua": "День без соцмереж",      "name_en": "No social media day",    "category": "mind",   "schedule": "daily",  "target_per_period": 1},
+    {"id": "deep_work",    "icon": "🎯", "name_ua": "Глибока робота 1 година","name_en": "Deep work 1 hour",       "category": "work",   "schedule": "daily",  "target_per_period": 1},
+    {"id": "plan_day",     "icon": "🗒", "name_ua": "План на день",           "name_en": "Plan the day",           "category": "work",   "schedule": "daily",  "target_per_period": 1},
+    {"id": "inbox_zero",   "icon": "📥", "name_ua": "Zero inbox",             "name_en": "Inbox zero",             "category": "work",   "schedule": "weekly", "target_per_period": 1},
+    {"id": "side_project", "icon": "🛠", "name_ua": "Пет-проєкт 3 рази/тиждень", "name_en": "Side project 3×/week", "category": "work",  "schedule": "weekly", "target_per_period": 3},
+    {"id": "tidy",         "icon": "🧹", "name_ua": "15 хвилин прибирання",   "name_en": "Tidy 15 minutes",        "category": "home",   "schedule": "daily",  "target_per_period": 1},
+    {"id": "laundry",      "icon": "🧺", "name_ua": "Прання",                 "name_en": "Laundry",                "category": "home",   "schedule": "weekly", "target_per_period": 1},
+    {"id": "plants",       "icon": "🌿", "name_ua": "Полити рослини",         "name_en": "Water the plants",       "category": "home",   "schedule": "weekly", "target_per_period": 1},
+    {"id": "budget",       "icon": "💰", "name_ua": "Облік витрат",           "name_en": "Track spending",         "category": "home",   "schedule": "weekly", "target_per_period": 1}
+  ]
+}

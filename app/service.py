@@ -273,6 +273,32 @@ def streak_series(database: db.Database, habit_id: int, days: int = 30, today: d
             "streak": _habit_streak(database, habit, today=today)}
 
 
+# --- habit templates ------------------------------------------------------------
+def template_by_id(templates: list[dict], template_id: str) -> dict:
+    for t in templates:
+        if t["id"] == template_id:
+            return t
+    raise ValueError(f"unknown template {template_id!r}")
+
+
+def create_from_template(
+    database: db.Database,
+    template_id: str,
+    templates_path=None,
+    name: str | None = None,
+    today: date | None = None,
+) -> dict:
+    """Add a habit from the template library (id/icon/category/schedule/target)."""
+    template = template_by_id(g.load_templates(templates_path), template_id)
+    hid = database.add_habit(
+        name or template["name_ua"], template["icon"], template["schedule"],
+        template["target_per_period"], today_iso(today), template["category"],
+    )
+    return {"id": hid, "template_id": template_id, "name": name or template["name_ua"],
+            "icon": template["icon"], "category": template["category"],
+            "schedule": template["schedule"], "target_per_period": template["target_per_period"]}
+
+
 # --- settings (sound / effects) -------------------------------------------------
 def get_settings(database: db.Database) -> dict:
     """Stored settings merged over the defaults (unknown keys ignored)."""
