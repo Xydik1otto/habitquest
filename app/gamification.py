@@ -25,6 +25,7 @@ DEFAULT_SETTINGS = {"sound": True, "effects": True}
 
 ACHIEVEMENTS_FILE = Path(__file__).resolve().parent / "achievements.json"
 TEMPLATES_FILE = Path(__file__).resolve().parent / "templates.json"
+QUOTES_FILE = Path(__file__).resolve().parent / "quotes.json"
 
 
 def month_key(d: date) -> str:
@@ -296,6 +297,29 @@ def load_templates(path: Path | None = None) -> list[dict]:
     if len(ids) != len(set(ids)):
         raise ValueError("duplicate template id")
     return templates
+
+
+# --- quote of the day (local JSON, no external API) ------------------------------
+def load_quotes(path: Path | None = None) -> list[dict]:
+    """Load motivational quotes (UA + EN) from the local JSON file."""
+    data = json.loads(Path(path or QUOTES_FILE).read_text(encoding="utf-8"))
+    quotes = data.get("quotes", data) if isinstance(data, dict) else data
+    if not isinstance(quotes, list) or not quotes:
+        raise ValueError("quotes JSON must contain a non-empty list")
+    for q in quotes:
+        for key in ("ua", "en", "author"):
+            if not isinstance(q.get(key), str) or not q[key].strip():
+                raise ValueError(f"quote missing '{key}'")
+    return quotes
+
+
+def quote_of_the_day(day: date | None = None, quotes_path: Path | None = None) -> dict:
+    """Deterministic quote for the given date (cycles through the list)."""
+    quotes = load_quotes(quotes_path)
+    d = day or date.today()
+    q = quotes[d.toordinal() % len(quotes)]
+    return {"date": d.isoformat(), "ua": q["ua"], "en": q["en"], "author": q["author"],
+            "total": len(quotes)}
 
 
 # --- heat map -----------------------------------------------------------------

@@ -100,6 +100,18 @@ def habit_from_template(payload: TemplateIn) -> dict:
         raise HTTPException(404, str(e))
 
 
+@app.get("/api/quote")
+def quote(date_str: str | None = None) -> dict:
+    try:
+        day = date.fromisoformat(date_str) if date_str else None
+    except ValueError as e:
+        raise HTTPException(400, f"invalid date {date_str!r}; expected 'YYYY-MM-DD'") from e
+    try:
+        return g.quote_of_the_day(day)
+    except ValueError as e:
+        raise HTTPException(500, str(e))
+
+
 @app.delete("/api/habits/{habit_id}")
 def delete_habit(habit_id: int) -> dict:
     get_db().delete_habit(habit_id)

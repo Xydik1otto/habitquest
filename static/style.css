@@ -29,6 +29,10 @@ button.primary, #new-habit button { background:var(--gold); color:#222; border:n
 .achv { display:inline-block; background:#26263a; border-radius:8px; padding:4px 10px; margin:4px 4px 0 0; font-size:.8rem; }
 .achv.locked { opacity:.35; }
 
+/* --- quote of the day --- */
+.quote { margin:0; padding:4px 0 0 12px; border-left:3px solid var(--gold); font-style:italic; }
+.quote footer { margin-top:6px; font-style:normal; font-size:.8rem; color:#888; }
+
 /* --- habit templates --- */
 .templates { display:flex; gap:6px; flex-wrap:wrap; }
 button.tpl { font-size:.85rem; padding:5px 10px; opacity:.85; }

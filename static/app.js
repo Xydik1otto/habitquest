@@ -81,6 +81,17 @@ function renderCategoryFilter() {
     b.addEventListener("click", () => { activeCategory = b.dataset.cat || null; load(); }));
 }
 
+// ---------- quote of the day (local JSON, deterministic per date) ----------
+async function renderQuote() {
+  const el = $("#quote-text");
+  if (!el) return;
+  try {
+    const q = await api("/api/quote");
+    el.textContent = `«${q.ua}»`;
+    $("#quote-author").textContent = `— ${q.author}`;
+  } catch (e) { el.textContent = e.message; }
+}
+
 // ---------- habit templates library (one-click add) ----------
 function renderTemplates(templates) {
   const el = $("#templates");
@@ -435,6 +446,7 @@ async function load() {
   renderPlayer(state.player);
   renderSettings();
   renderCategoryFilter();
+  renderQuote();
   renderTemplates(await api("/api/templates"));
   renderDay(state.habits);
   renderQuests(state.quests || [], state.habits);
