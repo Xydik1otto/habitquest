@@ -50,6 +50,11 @@ CREATE TABLE IF NOT EXISTS xp_log (
     reason TEXT NOT NULL,               -- 'checkin' | 'boss_bonus' | 'shop'
     habit_id INTEGER                    -- NULL for player-wide events
 );
+CREATE TABLE IF NOT EXISTS badges (
+    id TEXT PRIMARY KEY,                -- e.g. 'boss_2026-01_3'
+    label TEXT NOT NULL,
+    earned_at TEXT NOT NULL
+);
 """
 
 # Columns added after the initial MVP schema; applied to existing databases.
@@ -236,6 +241,27 @@ class Database:
         self.conn.commit()
         return row["amount"]
 
+    def sum_xp_in_month(self, habit_id: int, month: str, reason: str = "checkin") -> int:
+        """Total logged XP for one habit within 'YYYY-MM' (boss damage source)."""
+        row = self.conn.execute(
+            "SELECT COALESCE(SUM(amount), 0) AS s FROM xp_log "
+            "WHERE habit_id=? AND reason=? AND substr(date, 1, 7)=?",
+            (habit_id, reason, month),
+        ).fetchone()
+        return row["s"]
+
+    # -- badges ---------------------------------------------------------------
+    def add_badge(self, badge_id: str, label: str, earned_at: str) -> bool:
+        cur = self.conn.execute(
+            "INSERT OR IGNORE INTO badges(id, label, earned_at) VALUES (?,?,?)",
+            (badge_id, label, earned_at),
+        )
+        self.conn.commit()
+        return cur.rowcount > 0
+
+    def list_badges(self) -> list[sqlite3.Row]:
+        return self.conn.execute("SELECT * FROM badges ORDER BY earned_at, id").fetchall()
+
     # -- portability ----------------------------------------------------------
     def export(self) -> dict:
         habits = [dict(r) for r in self.list_habits()]
@@ -251,16 +277,18 @@ class Database:
             {"date": r["date"], "amount": r["amount"], "reason": r["reason"], "habit_id": r["habit_id"]}
             for r in self.conn.execute("SELECT date, amount, reason, habit_id FROM xp_log ORDER BY id")
         ]
+        badges = [dict(r) for r in self.list_badges()]
         row = self.conn.execute("SELECT xp, coins, shields FROM player WHERE id=1").fetchone()
         return {"version": 1, "player": {"xp": row["xp"], "coins": row["coins"], "shields": row["shields"]},
                 "habits": habits, "checkins": checkins, "freezes": freezes, "quests": quests,
-                "xp_log": xp_log}
+                "xp_log": xp_log, "badges": badges}
 
     def import_data(self, data: dict) -> None:
         self.conn.execute("DELETE FROM checkins")
         self.conn.execute("DELETE FROM freezes")
         self.conn.execute("DELETE FROM quests")
         self.conn.execute("DELETE FROM xp_log")
+        self.conn.execute("DELETE FROM badges")
         self.conn.execute("DELETE FROM habits")
         for h in data.get("habits", []):
             self.conn.execute(
@@ -285,6 +313,9 @@ class Database:
                 "INSERT INTO xp_log(date, amount, reason, habit_id) VALUES (?,?,?,?)",
                 (e["date"], e["amount"], e["reason"], e.get("habit_id")),
             )
+        for b in data.get("badges", []):
+            self.conn.execute("INSERT OR IGNORE INTO badges(id, label, earned_at) VALUES (?,?,?)",
+                              (b["id"], b["label"], b["earned_at"]))
         self.conn.commit()
 
 

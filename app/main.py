@@ -104,6 +104,11 @@ def list_quests(month: str | None = None) -> dict:
     return {"quests": service.list_quests(get_db(), month)}
 
 
+@app.get("/api/badges")
+def badges() -> dict:
+    return {"badges": [dict(b) for b in get_db().list_badges()]}
+
+
 @app.post("/api/freeze")
 def freeze(payload: FreezeIn) -> dict:
     try:

@@ -38,13 +38,14 @@ def create_quest(
 
 
 def _sync_quest(database: db.Database, quest, day: str = "") -> None:
-    """Recompute quest progress/damage from the check-ins of its month.
+    """Recompute quest progress/damage from this month's check-in XP.
 
-    Grants the one-time boss bonus XP when the boss goes down.
+    Boss HP = target × 10; every check-in deals damage equal to the XP it
+    earned (longer streaks hit harder). Victory → one-time bonus + badge.
     """
     dates = database.checkins_in_month(quest["habit_id"], quest["month"])
     progress = len(dates)
-    damage = progress * g.BOSS_HP_PER_TARGET  # alpha: flat damage per hit
+    damage = database.sum_xp_in_month(quest["habit_id"], quest["month"])
     hp = g.boss_hp(quest["target"])
     completed = damage >= hp
     rewarded = bool(quest["rewarded"])
@@ -52,6 +53,13 @@ def _sync_quest(database: db.Database, quest, day: str = "") -> None:
         database.add_xp(g.QUEST_BONUS_XP)
         database.add_coins(g.QUEST_BONUS_XP)
         database.log_xp(day or f"{quest['month']}-01", g.QUEST_BONUS_XP, "boss_bonus", quest["habit_id"])
+        habit = database.get_habit(quest["habit_id"])
+        name = habit["name"] if habit else f"habit {quest['habit_id']}"
+        database.add_badge(
+            f"boss_{quest['month']}_{quest['habit_id']}",
+            f"👹 {name} — {quest['month']}",
+            day or f"{quest['month']}-01",
+        )
         rewarded = True
     database.update_quest(quest["id"], progress, damage, completed, rewarded)
 
@@ -208,7 +216,8 @@ def habit_status(database: db.Database, habit, today: date | None = None) -> dic
 def full_state(database: db.Database, today: date | None = None) -> dict:
     habits = [habit_status(database, h, today) for h in database.list_habits()]
     return {"player": player_state(database), "habits": habits,
-            "quests": list_quests(database, today=today)}
+            "quests": list_quests(database, today=today),
+            "badges": [dict(b) for b in database.list_badges()]}
 
 
 def stats(database: db.Database, today: date | None = None) -> dict:

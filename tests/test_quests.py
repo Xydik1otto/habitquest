@@ -45,7 +45,7 @@ def test_quest_progress_counts_checkins(database):
     service.checkin(database, hid, "2026-01-06")
     q = database.list_quests("2026-01")[0]
     assert q["progress"] == 2
-    assert q["damage"] == 20  # flat 10 damage per hit in alpha
+    assert q["damage"] == 11 + 12  # damage = XP earned per check-in
 
 
 def test_quest_completion_awards_bonus_once(database):
@@ -106,7 +106,7 @@ def test_quests_in_state_and_endpoints(client):
     # check-in moves the boss bar
     client.post("/api/checkin", json={"habit_id": 1})
     q = client.get("/api/quests").json()["quests"][0]
-    assert q["progress"] == 1 and q["damage"] == 10
+    assert q["progress"] == 1 and q["damage"] == 11
 
 
 def test_undo_checkin_updates_quest_progress(client):

@@ -74,7 +74,7 @@ function renderQuests(quests, habits) {
         <span class="boss-hp-text">${q.completed ? "ПЕРЕМОЖЕНО!" : `HP ${Math.max(0, q.hp - q.damage)}/${q.hp}`}</span>
       </div>
       <div class="boss-hp"><div class="boss-hp-fill" style="width:${hpPct}%"></div></div>
-      <div class="boss-meta">${q.progress}/${q.target} ударів · нагорода ${q.reward} XP</div>`;
+      <div class="boss-meta">${q.progress}/${q.target} ударів · шкода ${q.damage}/${q.hp} · нагорода ${q.reward} XP</div>`;
     list.appendChild(row);
   }
 }
@@ -170,6 +170,13 @@ async function load() {
   renderHeatmap(await api("/api/heatmap?weeks=12"));
   renderStats(await api("/api/stats"), earned, (await api("/api/achievements")).all);
   renderShop(await api("/api/shop"));
+  renderBadges((await api("/api/badges")).badges);
+}
+
+function renderBadges(badges) {
+  $("#badges").innerHTML = badges.length
+    ? badges.map((b) => `<span class="achv badge">${b.label}</span>`).join("")
+    : "";
 }
 
 // ---------- PWA ----------

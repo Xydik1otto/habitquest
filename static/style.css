@@ -46,3 +46,4 @@ button.primary, #new-habit button { background:var(--gold); color:#222; border:n
 .shop { margin-top:12px; padding-top:10px; border-top:1px solid #26263a; }
 .shop-line { display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:.9rem; }
 #btn-buy-shield { background:var(--gold); color:#222; border:none; font-weight:600; }
+.badge { background:#3a2a10; border:1px solid var(--gold); color:var(--gold); }
