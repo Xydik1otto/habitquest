@@ -543,6 +543,22 @@ def report_pdf(database: db.Database, month: str | None = None, today: date | No
     return build_report_pdf(lines, title=f"HabitQuest Monthly Report {r['month']}")
 
 
+# --- buddy mode (file exchange, no server) --------------------------------------
+def buddy_file(database: db.Database) -> dict:
+    """Aggregate progress card to save as a file and share with a buddy."""
+    dates = database.checkin_dates()
+    return g.buddy_snapshot(
+        player_xp=database.xp(),
+        total_checkins=len(dates),
+        longest_streak=g.longest_streak(dates),
+    )
+
+
+def buddy_compare(database: db.Database, buddy_snapshot: dict) -> dict:
+    """Compare my progress with a buddy's snapshot loaded from their file."""
+    return g.buddy_compare(buddy_file(database), buddy_snapshot)
+
+
 def habit_status(database: db.Database, habit, today: date | None = None,
                  achievements_path=None) -> dict:
     today = today or date.today()

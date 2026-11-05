@@ -411,3 +411,63 @@ def weekday_stats(checkin_dates: set[str]) -> dict:
         "best_count": counts[best],
         "average_per_week": round(len(checkin_dates) / len(weeks), 2),
     }
+
+
+# --- buddy mode (local co-op via shared file) -----------------------------------
+BUDDY_FILE_VERSION = "habitquest-buddy-v1"
+BUDDY_METRICS = ("player_xp", "level", "total_checkins", "longest_streak")
+
+
+def buddy_snapshot(player_xp: int, total_checkins: int, longest_streak: int) -> dict:
+    """Portable progress card: save it to a file and share with a friend.
+
+    No personal data — only aggregate numbers, so the file can be exchanged
+    over any channel (messenger, USB stick) without a server.
+    """
+    return {
+        "version": BUDDY_FILE_VERSION,
+        "player_xp": int(player_xp),
+        "level": level_for_xp(player_xp),
+        "total_checkins": int(total_checkins),
+        "longest_streak": int(longest_streak),
+    }
+
+
+def _parse_buddy_snapshot(data: object, side: str) -> dict:
+    if not isinstance(data, dict):
+        raise ValueError(f"{side}: buddy snapshot must be an object")
+    if data.get("version") != BUDDY_FILE_VERSION:
+        raise ValueError(
+            f"{side}: unsupported buddy file version {data.get('version')!r}; "
+            f"expected {BUDDY_FILE_VERSION!r}"
+        )
+    out = {}
+    for key in BUDDY_METRICS:
+        value = data.get(key)
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            raise ValueError(f"{side}: field {key!r} must be a non-negative integer")
+        out[key] = value
+    return out
+
+
+def buddy_compare(mine: dict, theirs: dict) -> dict:
+    """Compare two buddy snapshots metric by metric.
+
+    Raises ValueError when either side is not a valid buddy snapshot.
+    """
+    a = _parse_buddy_snapshot(mine, "mine")
+    b = _parse_buddy_snapshot(theirs, "theirs")
+    per_metric = {}
+    wins = {"mine": 0, "theirs": 0, "tie": 0}
+    for key in BUDDY_METRICS:
+        if a[key] > b[key]:
+            leader = "mine"
+        elif b[key] > a[key]:
+            leader = "theirs"
+        else:
+            leader = "tie"
+        wins[leader] += 1
+        per_metric[key] = {"mine": a[key], "theirs": b[key], "leader": leader}
+    ahead = "mine" if wins["mine"] > wins["theirs"] else (
+        "theirs" if wins["theirs"] > wins["mine"] else "tie")
+    return {"per_metric": per_metric, "wins": wins, "ahead": ahead}

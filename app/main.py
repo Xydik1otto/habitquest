@@ -298,6 +298,25 @@ def report_pdf(month: str | None = None):
     )
 
 
+class BuddyIn(BaseModel):
+    buddy: dict
+
+
+@app.get("/api/buddy/file")
+def buddy_file() -> dict:
+    """Aggregate progress card to save as a file and share with a friend."""
+    return service.buddy_file(get_db())
+
+
+@app.post("/api/buddy/compare")
+def buddy_compare(payload: BuddyIn) -> dict:
+    """Compare my progress with a buddy snapshot loaded from their file."""
+    try:
+        return service.buddy_compare(get_db(), payload.buddy)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
 @app.get("/api/export/csv")
 def export_csv(kind: str = "habits") -> dict:
     """CSV export (spreadsheet-friendly): kind=habits|checkins."""
