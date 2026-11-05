@@ -1,3 +1,8 @@
+/* --- a11y: skip link, keyboard focus, contrast --- */
+.skip-link { position:absolute; left:-9999px; top:0; background:var(--gold); color:#222; padding:8px 14px; border-radius:0 0 8px 0; z-index:100; font-weight:600; }
+.skip-link:focus { left:0; }
+:focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
+
 :root { --bg:#12121a; --card:#1c1c28; --fg:#eee; --gold:#f5c542; --fire:#ff7043; --ok:#7bd88f; }
 * { box-sizing:border-box; }
 body { margin:0; font-family:system-ui,sans-serif; background:var(--bg); color:var(--fg); }

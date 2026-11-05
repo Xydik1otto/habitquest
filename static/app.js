@@ -67,7 +67,10 @@ async function saveSetting() {
 function renderPlayer(player) {
   lastLevel = player.level;
   $("#level-badge").textContent = `Lv ${player.level}`;
-  $("#xp-fill").style.width = `${Math.round(100 * player.xp_in_level / Math.max(1, player.xp_for_next))}%`;
+  const pct = Math.round(100 * player.xp_in_level / Math.max(1, player.xp_for_next));
+  $("#xp-fill").style.width = `${pct}%`;
+  const bar = $("#xp-bar");
+  if (bar) bar.setAttribute("aria-valuenow", String(pct));
   $("#xp-text").textContent = `${player.xp_in_level}/${player.xp_for_next} XP`;
 }
 
@@ -156,6 +159,7 @@ function renderDay(habits) {
     const box = document.createElement("input");
     box.type = "checkbox";
     box.checked = h.done_today;
+    box.setAttribute("aria-label", `${h.icon} ${h.name} — відмітити сьогодні`);
     box.addEventListener("change", async () => {
       const prevLevel = lastLevel;
       let created = false;
@@ -175,6 +179,7 @@ function renderDay(habits) {
       const fz = document.createElement("button");
       fz.textContent = "❄ freeze";
       fz.title = "Заморозити сьогодні (1/тиждень)";
+      fz.setAttribute("aria-label", `Заморозити сьогодні для звички ${h.name}`);
       fz.addEventListener("click", async () => {
         try { await api("/api/freeze", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ habit_id: h.id }) }); load(); }
         catch (e) { alert(e.message); }
@@ -194,6 +199,7 @@ function renderDay(habits) {
     const chartBtn = document.createElement("button");
     chartBtn.textContent = "📈";
     chartBtn.title = "Графік серії за 30 днів";
+    chartBtn.setAttribute("aria-label", `Графік серії за 30 днів для звички ${h.name}`);
     chartBtn.addEventListener("click", async () => {
       let panel = row.nextElementSibling;
       if (panel && panel.classList.contains("streak-chart")) { panel.remove(); return; }

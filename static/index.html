@@ -20,11 +20,12 @@
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
+<a href="#main" class="skip-link">Перейти до основного вмісту</a>
 <header>
   <h1>⚔️ HabitQuest</h1>
-  <div id="player-bar">
+  <div id="player-bar" role="status" aria-label="Прогрес гравця: рівень і XP">
     <span id="level-badge"></span>
-    <div id="xp-bar"><div id="xp-fill"></div></div>
+    <div id="xp-bar" role="progressbar" aria-label="XP до наступного рівня" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="xp-fill"></div></div>
     <span id="xp-text"></span>
   </div>
   <select id="lang-switch" title="Мова інтерфейсу (зберігається) / UI language (persisted)" aria-label="UI language">
@@ -33,7 +34,7 @@
   </select>
 </header>
 
-<main>
+<main id="main">
   <div id="first-run"></div>
 
   <section class="panel">
@@ -41,92 +42,92 @@
     <blockquote id="quote" class="quote"><span id="quote-text">…</span><footer id="quote-author"></footer></blockquote>
   </section>
 
-  <section class="panel">
+  <section class="panel" aria-labelledby="nav-templates">
     <h2 id="nav-templates">📚 Шаблони звичок</h2>
     <div id="templates" class="templates"></div>
   </section>
 
-  <section class="panel">
+  <section class="panel" aria-labelledby="nav-today">
     <h2 id="nav-today">Сьогодні</h2>
-    <div id="cat-filter" class="cat-filter"></div>
+    <div id="cat-filter" class="cat-filter" role="group" aria-label="Фільтр за категоріями"></div>
     <div id="day-list"></div>
-    <form id="new-habit">
-      <input id="h-name" placeholder="Нова звичка…" required maxlength="80">
-      <input id="h-icon" value="✅" maxlength="4" title="Емодзі-іконка">
-      <select id="h-category" title="Категорія">
+    <form id="new-habit" aria-label="Нова звичка">
+      <input id="h-name" placeholder="Нова звичка…" required maxlength="80" aria-label="Назва нової звички">
+      <input id="h-icon" value="✅" maxlength="4" title="Емодзі-іконка" aria-label="Емодзі-іконка звички">
+      <select id="h-category" title="Категорія" aria-label="Категорія звички">
         <option value="health">💚 Здоров'я</option>
         <option value="mind">🧠 Розум</option>
         <option value="work">💼 Робота</option>
         <option value="home">🏠 Дім</option>
       </select>
-      <select id="h-schedule">
+      <select id="h-schedule" aria-label="Розклад звички">
         <option value="daily">Щодня</option>
         <option value="weekly">Щотижня</option>
       </select>
-      <input id="h-target" type="number" min="1" max="7" value="1" title="Ціль за період">
+      <input id="h-target" type="number" min="1" max="7" value="1" title="Ціль за період" aria-label="Ціль за період">
       <button type="submit">Додати</button>
     </form>
   </section>
 
-  <section class="panel">
+  <section class="panel" aria-labelledby="nav-boss">
     <h2 id="nav-boss">🗡 Бос-бій цього місяця</h2>
     <div id="quest-list"></div>
-    <form id="new-quest">
-      <select id="q-habit" required></select>
-      <input id="q-target" type="number" min="1" max="31" value="12" title="Скільки разів за місяць">
+    <form id="new-quest" aria-label="Новий бос-бій">
+      <select id="q-habit" required aria-label="Звичка для бос-бою"></select>
+      <input id="q-target" type="number" min="1" max="31" value="12" title="Скільки разів за місяць" aria-label="Ціль бос-бою за місяць">
       <button type="submit">⚔ Викликати боса</button>
     </form>
   </section>
 
-  <section class="panel">
+  <section class="panel" aria-labelledby="nav-weekly">
     <h2 id="nav-weekly">📅 Тижневий квест</h2>
     <div id="weekly-quests"></div>
-    <form id="new-weekly-quest">
-      <select id="wq-h1" required></select>
-      <select id="wq-h2" required></select>
-      <select id="wq-h3" required></select>
-      <input id="wq-target" type="number" min="1" max="7" value="5" title="Разів за тиждень на кожну звичку">
+    <form id="new-weekly-quest" aria-label="Новий тижневий квест">
+      <select id="wq-h1" required aria-label="Перша звичка тижня"></select>
+      <select id="wq-h2" required aria-label="Друга звичка тижня"></select>
+      <select id="wq-h3" required aria-label="Третя звичка тижня"></select>
+      <input id="wq-target" type="number" min="1" max="7" value="5" title="Разів за тиждень на кожну звичку" aria-label="Ціль тижневого квесту">
       <button type="submit">📅 Створити</button>
     </form>
   </section>
 
-  <section class="panel">
+  <section class="panel" aria-labelledby="nav-heatmap">
     <h2 id="nav-heatmap">Тиждень (heatmap)</h2>
-    <div id="week-heatmap"></div>
+    <div id="week-heatmap" role="img" aria-label="Теплова карта чек-інів за 12 тижнів"></div>
   </section>
 
-  <section class="panel">
+  <section class="panel" aria-labelledby="nav-dashboard">
     <h2 id="nav-dashboard">📈 Дашборд (30 днів)</h2>
     <div id="dashboard"></div>
   </section>
 
-  <section class="panel">
+  <section class="panel" aria-labelledby="nav-recap">
     <h2 id="nav-recap">📊 Підсумок місяця</h2>
     <div class="recap-controls">
-      <input id="recap-month" type="month">
+      <input id="recap-month" type="month" aria-label="Місяць підсумку">
       <button id="recap-load">Показати</button>
     </div>
     <div id="recap"></div>
   </section>
 
-  <section class="panel">
+  <section class="panel" aria-labelledby="nav-achv">
     <h2 id="nav-achv">🏆 Редактор досягнень</h2>
     <div id="achv-editor-list"></div>
-    <form id="achv-form">
-      <input id="a-id" placeholder="id (напр. night_owl)" required maxlength="64" pattern="[a-z0-9_]+">
-      <input id="a-name" placeholder="Назва" required maxlength="80">
-      <input id="a-desc" placeholder="Опис" maxlength="200">
-      <select id="a-metric" title="Метрика">
+    <form id="achv-form" aria-label="Редактор досягнень">
+      <input id="a-id" placeholder="id (напр. night_owl)" required maxlength="64" pattern="[a-z0-9_]+" aria-label="Ідентифікатор досягнення">
+      <input id="a-name" placeholder="Назва" required maxlength="80" aria-label="Назва досягнення">
+      <input id="a-desc" placeholder="Опис" maxlength="200" aria-label="Опис досягнення">
+      <select id="a-metric" title="Метрика" aria-label="Метрика досягнення">
         <option value="streak">Серія (днів)</option>
         <option value="total_checkins">Усього чек-інів</option>
         <option value="gap_days">Пауза (днів)</option>
       </select>
-      <input id="a-threshold" type="number" min="1" value="10" title="Поріг">
+      <input id="a-threshold" type="number" min="1" value="10" title="Поріг" aria-label="Поріг досягнення">
       <button type="submit" id="a-submit">Додати</button>
     </form>
   </section>
 
-  <section class="panel">
+  <section class="panel" aria-labelledby="nav-stats">
     <h2 id="nav-stats">Статистика</h2>
     <div id="stats"></div>
     <div id="shop" class="shop"></div>
@@ -134,14 +135,14 @@
     <div class="portability">
       <button id="btn-export">⬇ Export JSON</button>
       <button id="btn-export-csv" title="Дві CSV-таблиці: звички та чек-іни (для Excel/Sheets)">⬇ Export CSV</button>
-      <label>⬆ Import <input type="file" id="import-file" accept="application/json" hidden></label>
+      <label>⬆ Import <input type="file" id="import-file" accept="application/json" hidden aria-label="Імпорт даних з JSON-файлу"></label>
     </div>
     <div id="achievements"></div>
     <div id="settings" class="settings"></div>
   </section>
 </main>
 
-<div id="levelup"><span id="levelup-text"></span></div>
+<div id="levelup"><span id="levelup-text" role="status" aria-live="polite"></span></div>
 
 <script src="/static/app.js"></script>
 </body>
