@@ -385,7 +385,8 @@ def player_state(database: db.Database) -> dict:
     return g.level_progress(database.xp())
 
 
-def habit_status(database: db.Database, habit, today: date | None = None) -> dict:
+def habit_status(database: db.Database, habit, today: date | None = None,
+                 achievements_path=None) -> dict:
     today = today or date.today()
     dates = database.checkin_dates(habit["id"])
     streak = _habit_streak(database, habit, today=today)
@@ -399,7 +400,7 @@ def habit_status(database: db.Database, habit, today: date | None = None) -> dic
         "streak": streak,
         "done_today": today.isoformat() in dates,
         "achievements": g.evaluate_achievements(streak, len(dates), g.last_gap_days(dates, today))
-        + g.evaluate_custom_achievements(g.load_achievement_defs(), streak, len(dates), g.last_gap_days(dates, today)),
+        + g.evaluate_custom_achievements(g.load_achievement_defs(achievements_path), streak, len(dates), g.last_gap_days(dates, today)),
     }
     if habit["schedule"] == "weekly":
         week_dates = g.iso_dates_of_week(*today.isocalendar()[:2])
@@ -407,8 +408,9 @@ def habit_status(database: db.Database, habit, today: date | None = None) -> dic
     return status
 
 
-def full_state(database: db.Database, today: date | None = None, category: str | None = None) -> dict:
-    habits = [habit_status(database, h, today) for h in database.list_habits(category)]
+def full_state(database: db.Database, today: date | None = None, category: str | None = None,
+               achievements_path=None) -> dict:
+    habits = [habit_status(database, h, today, achievements_path) for h in database.list_habits(category)]
     return {"player": player_state(database), "habits": habits,
             "quests": list_quests(database, today=today),
             "weekly_quests": list_weekly_quests(database, today=today),

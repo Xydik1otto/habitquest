@@ -84,6 +84,23 @@
   </section>
 
   <section class="panel">
+    <h2>🏆 Редактор досягнень</h2>
+    <div id="achv-editor-list"></div>
+    <form id="achv-form">
+      <input id="a-id" placeholder="id (напр. night_owl)" required maxlength="64" pattern="[a-z0-9_]+">
+      <input id="a-name" placeholder="Назва" required maxlength="80">
+      <input id="a-desc" placeholder="Опис" maxlength="200">
+      <select id="a-metric" title="Метрика">
+        <option value="streak">Серія (днів)</option>
+        <option value="total_checkins">Усього чек-інів</option>
+        <option value="gap_days">Пауза (днів)</option>
+      </select>
+      <input id="a-threshold" type="number" min="1" value="10" title="Поріг">
+      <button type="submit" id="a-submit">Додати</button>
+    </form>
+  </section>
+
+  <section class="panel">
     <h2>Статистика</h2>
     <div id="stats"></div>
     <div id="shop" class="shop"></div>

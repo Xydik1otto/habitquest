@@ -328,6 +328,50 @@ function renderShop(shop) {
   });
 }
 
+// ---------- achievements editor (achievements.json UI) ----------
+let editorEditId = null;  // non-null → the form edits an existing definition
+
+function renderAchvEditor(defs) {
+  $("#achv-editor-list").innerHTML = defs.map((d) =>
+    `<span class="achv">${d.name} <button class="achv-edit" data-id="${d.id}" title="Редагувати">✎</button></span>`).join("");
+  document.querySelectorAll(".achv-edit").forEach((b) =>
+    b.addEventListener("click", () => {
+      const d = defs.find((x) => x.id === b.dataset.id);
+      editorEditId = d.id;
+      $("#a-id").value = d.id;
+      $("#a-name").value = d.name;
+      $("#a-desc").value = d.description;
+      $("#a-metric").value = d.metric;
+      $("#a-threshold").value = d.threshold;
+      $("#a-submit").textContent = "Зберегти";
+    }));
+}
+
+function resetAchvForm() {
+  editorEditId = null;
+  $("#achv-form").reset();
+  $("#a-threshold").value = 10;
+  $("#a-submit").textContent = "Додати";
+}
+
+$("#achv-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const body = JSON.stringify({
+    id: $("#a-id").value.trim(),
+    name: $("#a-name").value.trim(),
+    description: $("#a-desc").value.trim(),
+    metric: $("#a-metric").value,
+    threshold: parseInt($("#a-threshold").value, 10) || 1,
+  });
+  const opts = { method: editorEditId ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body };
+  const url = editorEditId ? `/api/achievements/${encodeURIComponent(editorEditId)}` : "/api/achievements";
+  try {
+    await api(url, opts);
+    resetAchvForm();
+    load();
+  } catch (err) { alert(err.message); }
+});
+
 // ---------- stats & achievements (definitions come from JSON) ----------
 function renderStats(stats, earnedIds, defs) {
   $("#stats").innerHTML = `
@@ -380,7 +424,9 @@ async function load() {
   renderDashboard(await api("/api/dashboard"));
   const earned = new Set(state.habits.flatMap((h) => h.achievements));
   renderHeatmap(await api("/api/heatmap?weeks=12"));
-  renderStats(await api("/api/stats"), earned, (await api("/api/achievements")).all);
+  const defs = (await api("/api/achievements")).all;
+  renderStats(await api("/api/stats"), earned, defs);
+  renderAchvEditor(defs);
   renderShop(await api("/api/shop"));
   renderBadges((await api("/api/badges")).badges);
   loadRecap($("#recap-month").value);

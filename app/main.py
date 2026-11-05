@@ -16,6 +16,7 @@ from . import service
 app = FastAPI(title="habitquest", version="0.3.0")
 
 DB_PATH = Path(__file__).resolve().parent.parent / "data" / "habitquest.db"
+ACHIEVEMENTS_PATH = g.ACHIEVEMENTS_FILE
 _database: db_mod.Database | None = None
 
 
@@ -70,7 +71,7 @@ class BuyIn(BaseModel):
 def state(category: str | None = None) -> dict:
     if category is not None and category not in g.CATEGORIES:
         raise HTTPException(400, f"unknown category {category!r}; expected one of {g.CATEGORIES}")
-    return service.full_state(get_db(), category=category)
+    return service.full_state(get_db(), category=category, achievements_path=ACHIEVEMENTS_PATH)
 
 
 @app.post("/api/habits")
@@ -220,7 +221,36 @@ def import_data(data: dict) -> dict:
 
 @app.get("/api/achievements")
 def achievements() -> dict:
-    return {"all": g.load_achievement_defs()}
+    return {"all": g.load_achievement_defs(ACHIEVEMENTS_PATH)}
+
+
+class AchievementIn(BaseModel):
+    id: str = Field(min_length=1, max_length=64)
+    name: str = Field(min_length=1, max_length=80)
+    description: str = Field(default="", max_length=200)
+    metric: str = Field(pattern="^(streak|total_checkins|gap_days)$")
+    threshold: int = Field(ge=1, le=100000)
+
+
+@app.post("/api/achievements")
+def add_achievement(payload: AchievementIn) -> dict:
+    try:
+        defs = g.add_achievement_def(ACHIEVEMENTS_PATH, payload.model_dump())
+    except ValueError as e:
+        msg = str(e)
+        raise HTTPException(409 if "already exists" in msg else 400, msg)
+    return {"achievements": defs}
+
+
+@app.put("/api/achievements/{achievement_id}")
+def update_achievement(achievement_id: str, payload: AchievementIn) -> dict:
+    try:
+        defs = g.update_achievement_def(ACHIEVEMENTS_PATH, achievement_id, payload.model_dump())
+    except ValueError as e:
+        msg = str(e)
+        code = 404 if "unknown achievement" in msg else 409 if "already exists" in msg else 400
+        raise HTTPException(code, msg)
+    return {"achievements": defs}
 
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"

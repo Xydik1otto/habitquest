@@ -196,6 +196,49 @@ def load_achievement_defs(path: Path | None = None) -> list[dict]:
     return defs
 
 
+ACHIEVEMENTS_COMMENT = (
+    "Визначення досягнень habitquest. Шаблон для Pro Pack: додайте об'єкти з полями "
+    "id, name, description, metric (streak | total_checkins | gap_days), threshold."
+)
+
+
+def save_achievement_defs(defs: list[dict], path: Path | None = None) -> None:
+    """Validate and persist the achievement definitions (editor storage)."""
+    path = Path(path or ACHIEVEMENTS_FILE)
+    for d in defs:
+        validate_achievement_def(d)
+    ids = [d["id"] for d in defs]
+    if len(ids) != len(set(ids)):
+        raise ValueError("duplicate achievement id in definitions")
+    payload = {"_comment": ACHIEVEMENTS_COMMENT, "achievements": defs}
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def add_achievement_def(path: Path | None, payload: dict) -> list[dict]:
+    """Validate and append a new achievement definition; returns the full list."""
+    validate_achievement_def(payload)
+    defs = load_achievement_defs(path)
+    if any(d["id"] == payload["id"] for d in defs):
+        raise ValueError(f"achievement {payload['id']!r} already exists")
+    defs.append(dict(payload))
+    save_achievement_defs(defs, path)
+    return defs
+
+
+def update_achievement_def(path: Path | None, achievement_id: str, payload: dict) -> list[dict]:
+    """Replace the definition with the given id; returns the full list."""
+    validate_achievement_def(payload)
+    defs = load_achievement_defs(path)
+    index = next((i for i, d in enumerate(defs) if d["id"] == achievement_id), None)
+    if index is None:
+        raise ValueError(f"unknown achievement {achievement_id!r}")
+    if payload["id"] != achievement_id and any(d["id"] == payload["id"] for d in defs):
+        raise ValueError(f"achievement {payload['id']!r} already exists")
+    defs[index] = dict(payload)
+    save_achievement_defs(defs, path)
+    return defs
+
+
 def evaluate_custom_achievements(
     defs: list[dict],
     streak: int,

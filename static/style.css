@@ -92,6 +92,15 @@ button.cat.active { opacity:1; border-color:var(--gold); color:var(--gold); }
 .dash-card { background:#26263a; border-radius:8px; padding:5px 12px; font-size:.85rem; }
 .dash-chart { overflow-x:auto; }
 
+/* --- achievements editor --- */
+.achv-edit { background:none; border:none; padding:0 2px; cursor:pointer; opacity:.6; }
+.achv-edit:hover { opacity:1; }
+#achv-form { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+#achv-form input, #achv-form select { font-size:.85rem; }
+#achv-form #a-id { width:150px; }
+#achv-form #a-threshold { width:80px; }
+#achv-form button { background:var(--gold); color:#222; border:none; font-weight:600; }
+
 /* --- level-up overlay + confetti --- */
 #levelup { position:fixed; inset:0; pointer-events:none; z-index:50; display:none; align-items:center; justify-content:center; }
 #levelup.show { display:flex; }
