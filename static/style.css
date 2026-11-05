@@ -81,3 +81,16 @@ button.cat.active { opacity:1; border-color:var(--gold); color:var(--gold); }
 #new-weekly-quest { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
 #new-weekly-quest select { max-width:160px; }
 .weekly-empty { color:#888; font-size:.85rem; }
+
+/* --- settings (sound / effects toggles) --- */
+.settings { margin-top:12px; padding-top:10px; border-top:1px solid #26263a; display:flex; gap:18px; flex-wrap:wrap; font-size:.9rem; }
+.settings label { display:flex; align-items:center; gap:6px; cursor:pointer; }
+.settings input { width:16px; height:16px; }
+
+/* --- level-up overlay + confetti --- */
+#levelup { position:fixed; inset:0; pointer-events:none; z-index:50; display:none; align-items:center; justify-content:center; }
+#levelup.show { display:flex; }
+#levelup-text { font-size:2.4rem; font-weight:800; color:var(--gold); text-shadow:0 0 24px rgba(245,197,66,.6); animation:levelup-pop .5s ease-out; }
+@keyframes levelup-pop { 0% { transform:scale(.4); opacity:0; } 60% { transform:scale(1.15); opacity:1; } 100% { transform:scale(1); } }
+.confetti { position:absolute; top:-12px; width:9px; height:14px; border-radius:2px; opacity:.9; animation:confetti-fall linear forwards; }
+@keyframes confetti-fall { to { transform:translateY(105vh) rotate(720deg); opacity:.2; } }

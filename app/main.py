@@ -57,6 +57,10 @@ class WeeklyQuestIn(BaseModel):
     target: int = Field(default=5, ge=1, le=7)
 
 
+class SettingsIn(BaseModel):
+    settings: dict
+
+
 class BuyIn(BaseModel):
     item: str = "shield"
     qty: int = Field(default=1, ge=1, le=10)
@@ -146,6 +150,19 @@ def recap(month: str | None = None) -> dict:
 def freeze(payload: FreezeIn) -> dict:
     try:
         return service.use_freeze(get_db(), payload.habit_id, payload.date)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@app.get("/api/settings")
+def get_settings() -> dict:
+    return service.get_settings(get_db())
+
+
+@app.patch("/api/settings")
+def set_settings(payload: SettingsIn) -> dict:
+    try:
+        return service.set_settings(get_db(), payload.settings)
     except ValueError as e:
         raise HTTPException(400, str(e))
 

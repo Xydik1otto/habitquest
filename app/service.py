@@ -273,6 +273,32 @@ def streak_series(database: db.Database, habit_id: int, days: int = 30, today: d
             "streak": _habit_streak(database, habit, today=today)}
 
 
+# --- settings (sound / effects) -------------------------------------------------
+def get_settings(database: db.Database) -> dict:
+    """Stored settings merged over the defaults (unknown keys ignored)."""
+    import json as _json
+    try:
+        stored = _json.loads(database.settings_json() or "{}")
+    except ValueError:
+        stored = {}
+    return {**g.DEFAULT_SETTINGS, **{k: v for k, v in stored.items() if k in g.DEFAULT_SETTINGS}}
+
+
+def set_settings(database: db.Database, patch: dict) -> dict:
+    """Validate and persist a partial settings update; returns the full state."""
+    import json as _json
+    if not isinstance(patch, dict):
+        raise ValueError("settings patch must be an object")
+    for key, value in patch.items():
+        if key not in g.DEFAULT_SETTINGS:
+            raise ValueError(f"unknown setting {key!r}; expected one of {sorted(g.DEFAULT_SETTINGS)}")
+        if not isinstance(value, bool):
+            raise ValueError(f"setting {key!r} must be a boolean")
+    merged = {**get_settings(database), **patch}
+    database.save_settings_json(_json.dumps(merged))
+    return merged
+
+
 # --- streak shield shop -------------------------------------------------------
 def shop_state(database: db.Database) -> dict:
     return {
@@ -386,6 +412,7 @@ def full_state(database: db.Database, today: date | None = None, category: str |
     return {"player": player_state(database), "habits": habits,
             "quests": list_quests(database, today=today),
             "weekly_quests": list_weekly_quests(database, today=today),
+            "settings": get_settings(database),
             "badges": [dict(b) for b in database.list_badges()]}
 
 

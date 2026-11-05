@@ -71,6 +71,7 @@ _MIGRATIONS = [
     ("player", "coins", "ALTER TABLE player ADD COLUMN coins INTEGER NOT NULL DEFAULT 0"),
     ("player", "shields", "ALTER TABLE player ADD COLUMN shields INTEGER NOT NULL DEFAULT 0"),
     ("habits", "category", "ALTER TABLE habits ADD COLUMN category TEXT NOT NULL DEFAULT 'health'"),
+    ("player", "settings", "ALTER TABLE player ADD COLUMN settings TEXT NOT NULL DEFAULT '{}'"),
 ]
 
 
@@ -261,6 +262,14 @@ class Database:
     def shields(self) -> int:
         return self.conn.execute("SELECT shields FROM player WHERE id=1").fetchone()["shields"]
 
+    # -- settings (sound / effects toggles) ------------------------------------
+    def settings_json(self) -> str:
+        return self.conn.execute("SELECT settings FROM player WHERE id=1").fetchone()["settings"]
+
+    def save_settings_json(self, raw: str) -> None:
+        self.conn.execute("UPDATE player SET settings=? WHERE id=1", (raw,))
+        self.conn.commit()
+
     def log_xp(self, day: str, amount: int, reason: str, habit_id: int | None = None) -> None:
         self.conn.execute(
             "INSERT INTO xp_log(date, amount, reason, habit_id) VALUES (?,?,?,?)",
@@ -340,7 +349,12 @@ class Database:
             for q in self.list_weekly_quests()
         ]
         row = self.conn.execute("SELECT xp, coins, shields FROM player WHERE id=1").fetchone()
+        try:
+            settings = json.loads(self.settings_json() or "{}")
+        except ValueError:
+            settings = {}
         return {"version": 1, "player": {"xp": row["xp"], "coins": row["coins"], "shields": row["shields"]},
+                "settings": settings,
                 "habits": habits, "checkins": checkins, "freezes": freezes, "quests": quests,
                 "weekly_quests": weekly_quests, "xp_log": xp_log, "badges": badges}
 
@@ -377,6 +391,8 @@ class Database:
         self.conn.execute("UPDATE player SET xp=? WHERE id=1", (data.get("player", {}).get("xp", 0),))
         self.conn.execute("UPDATE player SET coins=? WHERE id=1", (data.get("player", {}).get("coins", 0),))
         self.conn.execute("UPDATE player SET shields=? WHERE id=1", (data.get("player", {}).get("shields", 0),))
+        if "settings" in data:
+            self.save_settings_json(json.dumps(data["settings"]))
         for e in data.get("xp_log", []):
             self.conn.execute(
                 "INSERT INTO xp_log(date, amount, reason, habit_id) VALUES (?,?,?,?)",

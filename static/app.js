@@ -5,8 +5,64 @@ const api = (path, opts) => fetch(path, opts).then(async (r) => {
   return r.json();
 });
 
+let settings = { sound: true, effects: true };
+let lastLevel = 1;
+
+// ---------- sound & level-up effects (WebAudio + CSS, toggle in settings) ----------
+let audioCtx = null;
+function blip(freq = 660) {
+  if (!settings.sound) return;
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(freq * 1.5, audioCtx.currentTime + 0.12);
+    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.3);
+  } catch (e) { /* audio unavailable — stay silent */ }
+}
+
+const CONFETTI_COLORS = ["#f5c542", "#ff7043", "#7bd88f", "#61afef", "#e5484d"];
+function celebrate(level) {
+  const overlay = $("#levelup");
+  $("#levelup-text").textContent = `⭐ Рівень ${level}!`;
+  overlay.classList.add("show");
+  const colors = CONFETTI_COLORS;
+  for (let i = 0; i < 40; i++) {
+    const bit = document.createElement("span");
+    bit.className = "confetti";
+    bit.style.left = `${Math.random() * 100}vw`;
+    bit.style.background = colors[i % colors.length];
+    bit.style.animationDelay = `${Math.random() * 0.6}s`;
+    bit.style.animationDuration = `${1.4 + Math.random() * 1.2}s`;
+    bit.style.transform = `rotate(${Math.random() * 360}deg)`;
+    overlay.appendChild(bit);
+  }
+  setTimeout(() => { overlay.classList.remove("show"); overlay.innerHTML = "<span id=\"levelup-text\"></span>"; }, 2600);
+}
+
+function renderSettings() {
+  $("#settings").innerHTML = `
+    <label><input type="checkbox" id="set-sound" ${settings.sound ? "checked" : ""}> 🔊 Звук чек-іну</label>
+    <label><input type="checkbox" id="set-effects" ${settings.effects ? "checked" : ""}> ✨ Анімація рівня</label>`;
+  $("#set-sound").addEventListener("change", saveSetting);
+  $("#set-effects").addEventListener("change", saveSetting);
+}
+
+async function saveSetting() {
+  const patch = { sound: $("#set-sound").checked, effects: $("#set-effects").checked };
+  settings = await api("/api/settings", { method: "PATCH", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ settings: patch }) });
+}
+
 // ---------- player bar ----------
 function renderPlayer(player) {
+  lastLevel = player.level;
   $("#level-badge").textContent = `Lv ${player.level}`;
   $("#xp-fill").style.width = `${Math.round(100 * player.xp_in_level / Math.max(1, player.xp_for_next))}%`;
   $("#xp-text").textContent = `${player.xp_in_level}/${player.xp_for_next} XP`;
@@ -43,13 +99,18 @@ function renderDay(habits) {
     box.type = "checkbox";
     box.checked = h.done_today;
     box.addEventListener("change", async () => {
+      const prevLevel = lastLevel;
+      let created = false;
       if (box.checked) {
-        await api("/api/checkin", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ habit_id: h.id }) });
+        const res = await api("/api/checkin", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ habit_id: h.id }) });
+        created = res.created;
       } else {
         const today = new Date().toISOString().slice(0, 10);
         await api(`/api/checkin/${h.id}/${today}`, { method: "DELETE" });
       }
-      load();
+      if (created) blip();
+      await load();
+      if (created && settings.effects && lastLevel > prevLevel) celebrate(lastLevel);
     });
     row.prepend(box);
     if (!h.done_today && h.schedule === "daily") {
@@ -277,7 +338,9 @@ $("#import-file").addEventListener("change", async (e) => {
 // ---------- load ----------
 async function load() {
   const state = await api("/api/state" + (activeCategory ? `?category=${activeCategory}` : ""));
+  settings = state.settings || settings;
   renderPlayer(state.player);
+  renderSettings();
   renderCategoryFilter();
   renderDay(state.habits);
   renderQuests(state.quests || [], state.habits);
