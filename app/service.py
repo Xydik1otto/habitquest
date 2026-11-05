@@ -522,6 +522,27 @@ def player_state(database: db.Database) -> dict:
     return g.level_progress(database.xp())
 
 
+def report_pdf(database: db.Database, month: str | None = None, today: date | None = None) -> bytes:
+    """Monthly recap as a PDF document (stdlib-only generator)."""
+    from .pdf_report import build_report_pdf
+
+    r = recap(database, month, today)
+    lines = [
+        f"Month: {r['month']}",
+        f"Check-in days: {r['checkins']}",
+        f"Active days: {r['active_days']}",
+        f"XP earned: {r['xp_earned']}   XP spent: {r['xp_spent']}   Net: {r['xp_net']}",
+        f"Longest streak: {r['longest_streak']}",
+        f"Best day: {r['best_day'] or 'none'} ({r['best_day_checkins']} check-ins)",
+        f"Quests won: {r['quests_won']} of {r['quests_total']}",
+        "",
+        "Top habits:",
+    ]
+    for h in r["top_habits"]:
+        lines.append(f"  {h['icon']} {h['name']}: {h['checkins']} check-ins")
+    return build_report_pdf(lines, title=f"HabitQuest Monthly Report {r['month']}")
+
+
 def habit_status(database: db.Database, habit, today: date | None = None,
                  achievements_path=None) -> dict:
     today = today or date.today()

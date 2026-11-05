@@ -5,7 +5,7 @@ from datetime import date
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -282,6 +282,20 @@ def dashboard() -> dict:
 @app.get("/api/export")
 def export() -> dict:
     return get_db().export()
+
+
+@app.get("/api/report.pdf")
+def report_pdf(month: str | None = None):
+    """Monthly recap as a downloadable PDF (kind: application/pdf)."""
+    try:
+        data = service.report_pdf(get_db(), month)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    return Response(
+        content=data,
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=habitquest-report.pdf"},
+    )
 
 
 @app.get("/api/export/csv")
