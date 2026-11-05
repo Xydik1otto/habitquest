@@ -202,6 +202,11 @@ def stats() -> dict:
     return service.stats(get_db())
 
 
+@app.get("/api/dashboard")
+def dashboard() -> dict:
+    return service.dashboard(get_db())
+
+
 @app.get("/api/export")
 def export() -> dict:
     return get_db().export()

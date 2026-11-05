@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 SCHEMA = """
@@ -314,6 +314,14 @@ class Database:
             (month,),
         ).fetchall()
         return {r["habit_id"]: r["n"] for r in rows}
+
+    def xp_by_day(self, days: int, today: date) -> dict[str, int]:
+        """Net XP moved per day over the last `days` days (dashboard chart)."""
+        since = (today - timedelta(days=days - 1)).isoformat()
+        rows = self.conn.execute(
+            "SELECT date, SUM(amount) AS xp FROM xp_log WHERE date >= ? GROUP BY date", (since,)
+        ).fetchall()
+        return {r["date"]: r["xp"] for r in rows}
 
     # -- badges ---------------------------------------------------------------
     def add_badge(self, badge_id: str, label: str, earned_at: str) -> bool:

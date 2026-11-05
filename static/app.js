@@ -198,6 +198,37 @@ $("#new-quest").addEventListener("submit", async (e) => {
   } catch (err) { alert(err.message); }
 });
 
+// ---------- dashboard (XP flow SVG + wallet + level) ----------
+function renderDashboard(d) {
+  const cell = 12, gap = 2, h = 70, labelW = 4;
+  const w = labelW + d.xp_by_day.length * (cell + gap);
+  const maxX = Math.max(1, ...d.xp_by_day.map((p) => Math.max(0, p.xp)));
+  const minX = Math.min(0, ...d.xp_by_day.map((p) => p.xp));
+  const zeroY = h - 12 - Math.round((0 - minX) / (maxX - minX) * (h - 18));
+  let svg = `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg" class="dash-svg">`;
+  svg += `<line x1="0" y1="${zeroY}" x2="${w}" y2="${zeroY}" stroke="#3a3a52" stroke-width="1"/>`;
+  d.xp_by_day.forEach((p, i) => {
+    const x = labelW + i * (cell + gap);
+    const hh = Math.round(Math.abs(p.xp) / (maxX - minX) * (h - 18));
+    if (p.xp === 0) return;
+    const y = p.xp > 0 ? zeroY - hh : zeroY;
+    const fill = p.xp > 0 ? "url(#dashGrad)" : "#e5484d";
+    svg += `<rect x="${x}" y="${y}" width="${cell}" height="${Math.max(2, hh)}" rx="2" fill="${fill}"><title>${p.date}: ${p.xp > 0 ? "+" : ""}${p.xp} XP</title></rect>`;
+  });
+  svg += `<defs><linearGradient id="dashGrad" x1="0" y1="1" x2="0" y2="0">
+    <stop offset="0%" stop-color="#f5c542"/><stop offset="100%" stop-color="#ff7043"/></linearGradient></defs>`;
+  svg += `</svg>`;
+  $("#dashboard").innerHTML = `
+    <div class="dash-cards">
+      <span class="dash-card">⭐ Рівень <b>${d.player.level}</b></span>
+      <span class="dash-card">💰 Монети <b>${d.coins}</b></span>
+      <span class="dash-card">🛡 Щити <b>${d.shields}</b></span>
+      <span class="dash-card">📈 XP за 30 дн <b>+${d.xp_earned_30d}</b></span>
+      <span class="dash-card">🧾 Чек-інів <b>${d.checkins_30d}</b>/30</span>
+    </div>
+    <div class="dash-chart">${svg}</div>`;
+}
+
 // ---------- weekly mini-quests (3 habits × N check-ins, coin reward) ----------
 function fillHabitSelects(habits) {
   const options = habits.map((h) => `<option value="${h.id}">${h.icon} ${h.name}</option>`).join("");
@@ -346,6 +377,7 @@ async function load() {
   renderQuests(state.quests || [], state.habits);
   fillHabitSelects(state.habits);
   renderWeeklyQuests(state.weekly_quests || []);
+  renderDashboard(await api("/api/dashboard"));
   const earned = new Set(state.habits.flatMap((h) => h.achievements));
   renderHeatmap(await api("/api/heatmap?weeks=12"));
   renderStats(await api("/api/stats"), earned, (await api("/api/achievements")).all);

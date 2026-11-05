@@ -416,6 +416,24 @@ def full_state(database: db.Database, today: date | None = None, category: str |
             "badges": [dict(b) for b in database.list_badges()]}
 
 
+# --- dashboard visualizations ---------------------------------------------------
+def dashboard(database: db.Database, today: date | None = None) -> dict:
+    """30-day XP flow + wallet + level: the data behind the dashboard SVGs."""
+    today = today or date.today()
+    log = database.xp_by_day(30, today)
+    xp_by_day = [{"date": (today - timedelta(days=i)).isoformat(), "xp": log.get((today - timedelta(days=i)).isoformat(), 0)}
+                 for i in range(29, -1, -1)]
+    all_dates = database.checkin_dates()
+    return {
+        "xp_by_day": xp_by_day,
+        "xp_earned_30d": sum(d["xp"] for d in xp_by_day if d["xp"] > 0),
+        "coins": database.coins(),
+        "shields": database.shields(),
+        "player": player_state(database),
+        "checkins_30d": round(g.completion_rate_30d(all_dates, today) * 30),
+    }
+
+
 def stats(database: db.Database, today: date | None = None) -> dict:
     all_dates = database.checkin_dates()
     return {

@@ -87,6 +87,11 @@ button.cat.active { opacity:1; border-color:var(--gold); color:var(--gold); }
 .settings label { display:flex; align-items:center; gap:6px; cursor:pointer; }
 .settings input { width:16px; height:16px; }
 
+/* --- dashboard --- */
+.dash-cards { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+.dash-card { background:#26263a; border-radius:8px; padding:5px 12px; font-size:.85rem; }
+.dash-chart { overflow-x:auto; }
+
 /* --- level-up overlay + confetti --- */
 #levelup { position:fixed; inset:0; pointer-events:none; z-index:50; display:none; align-items:center; justify-content:center; }
 #levelup.show { display:flex; }
