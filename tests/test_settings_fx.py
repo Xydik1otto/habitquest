@@ -26,15 +26,15 @@ def test_settings_persist_across_connections(tmp_path):
     path = tmp_path / "persist.db"
     db = db_mod.Database(path)
     out = service.set_settings(db, {"sound": False})
-    assert out == {"sound": False, "effects": True}
+    assert out == {"sound": False, "effects": True, "hardcore": False}
     reopened = db_mod.Database(path)
-    assert service.get_settings(reopened) == {"sound": False, "effects": True}
+    assert service.get_settings(reopened) == {"sound": False, "effects": True, "hardcore": False}
 
 
 def test_settings_defaults_and_unknown_key_filtering(database):
     assert service.get_settings(database) == g.DEFAULT_SETTINGS
     database.save_settings_json(json.dumps({"sound": False, "bogus": 1}))
-    assert service.get_settings(database) == {"sound": False, "effects": True}
+    assert service.get_settings(database) == {"sound": False, "effects": True, "hardcore": False}
     # corrupt JSON falls back to defaults
     database.save_settings_json("not-json{")
     assert service.get_settings(database) == g.DEFAULT_SETTINGS
@@ -48,15 +48,15 @@ def test_set_settings_validates(database):
 
 
 def test_settings_api_roundtrip(client):
-    assert client.get("/api/settings").json() == {"sound": True, "effects": True}
+    assert client.get("/api/settings").json() == {"sound": True, "effects": True, "hardcore": False}
     r = client.patch("/api/settings", json={"settings": {"sound": False}})
-    assert r.status_code == 200 and r.json() == {"sound": False, "effects": True}
+    assert r.status_code == 200 and r.json() == {"sound": False, "effects": True, "hardcore": False}
     assert client.get("/api/settings").json()["sound"] is False
     assert client.patch("/api/settings", json={"settings": {"nope": True}}).status_code == 400
     assert client.patch("/api/settings", json={"settings": {"sound": 3}}).status_code == 400
     # state carries the toggles so the UI can honour them without an extra call
     state = client.get("/api/state").json()
-    assert state["settings"] == {"sound": False, "effects": True}
+    assert state["settings"] == {"sound": False, "effects": True, "hardcore": False}
 
 
 def test_settings_in_export_import(database, tmp_path):

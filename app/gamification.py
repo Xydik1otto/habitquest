@@ -20,8 +20,10 @@ WEEKLY_QUEST_SIZE = 3     # habits in a weekly mini-quest
 WEEKLY_QUEST_TARGET = 5   # check-ins per habit per week
 WEEKLY_QUEST_REWARD = 150  # coin reward for completing the weekly quest
 
-# User-facing toggles (WebAudio check-in sound, level-up effects).
-DEFAULT_SETTINGS = {"sound": True, "effects": True}
+# User-facing toggles (WebAudio check-in sound, level-up effects, hardcore mode).
+DEFAULT_SETTINGS = {"sound": True, "effects": True, "hardcore": False}
+HARDCORE_PENALTY_XP = 10     # XP lost per missed (unfrozen) day in hardcore mode
+HARDCORE_LOOKBACK_DAYS = 90  # how far back missed days can be penalized
 
 ACHIEVEMENTS_FILE = Path(__file__).resolve().parent / "achievements.json"
 TEMPLATES_FILE = Path(__file__).resolve().parent / "templates.json"

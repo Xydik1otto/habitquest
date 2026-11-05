@@ -5,7 +5,7 @@ const api = (path, opts) => fetch(path, opts).then(async (r) => {
   return r.json();
 });
 
-let settings = { sound: true, effects: true };
+let settings = { sound: true, effects: true, hardcore: false };
 let lastLevel = 1;
 
 // ---------- sound & level-up effects (WebAudio + CSS, toggle in settings) ----------
@@ -49,13 +49,16 @@ function celebrate(level) {
 function renderSettings() {
   $("#settings").innerHTML = `
     <label><input type="checkbox" id="set-sound" ${settings.sound ? "checked" : ""}> 🔊 Звук чек-іну</label>
-    <label><input type="checkbox" id="set-effects" ${settings.effects ? "checked" : ""}> ✨ Анімація рівня</label>`;
+    <label><input type="checkbox" id="set-effects" ${settings.effects ? "checked" : ""}> ✨ Анімація рівня</label>
+    <label title="Пропущений (не заморожений) день щоденної звички = −10 XP. Для дисципліни!"><input type="checkbox" id="set-hardcore" ${settings.hardcore ? "checked" : ""}> ☠ Хардкор: пропущений день = −10 XP</label>`;
   $("#set-sound").addEventListener("change", saveSetting);
   $("#set-effects").addEventListener("change", saveSetting);
+  $("#set-hardcore").addEventListener("change", saveSetting);
 }
 
 async function saveSetting() {
-  const patch = { sound: $("#set-sound").checked, effects: $("#set-effects").checked };
+  const patch = { sound: $("#set-sound").checked, effects: $("#set-effects").checked,
+                  hardcore: $("#set-hardcore").checked };
   settings = await api("/api/settings", { method: "PATCH", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ settings: patch }) });
 }

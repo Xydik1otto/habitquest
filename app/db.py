@@ -289,6 +289,14 @@ class Database:
         self.conn.commit()
         return row["amount"]
 
+    def has_xp_log(self, habit_id: int, day: str, reason: str) -> bool:
+        """Whether an xp_log entry exists for this habit/day/reason (hardcore dedupe)."""
+        row = self.conn.execute(
+            "SELECT 1 FROM xp_log WHERE habit_id=? AND date=? AND reason=?",
+            (habit_id, day, reason),
+        ).fetchone()
+        return row is not None
+
     def sum_xp_in_month(self, habit_id: int, month: str, reason: str = "checkin") -> int:
         """Total logged XP for one habit within 'YYYY-MM' (boss damage source)."""
         row = self.conn.execute(

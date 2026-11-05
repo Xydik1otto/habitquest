@@ -299,6 +299,42 @@ def create_from_template(
             "schedule": template["schedule"], "target_per_period": template["target_per_period"]}
 
 
+# --- hardcore mode: a missed day costs XP ---------------------------------------
+def apply_hardcore_penalties(database: db.Database, today: date | None = None) -> dict:
+    """Deduct XP for missed (unfrozen) days of daily habits when hardcore is on.
+
+    Each missed day is penalized exactly once (deduplicated via xp_log with
+    reason 'hardcore'); frozen days and the lookback window are respected.
+    The deduction is capped at the player's current XP (never goes negative).
+    """
+    today = today or date.today()
+    if not get_settings(database).get("hardcore"):
+        return {"enabled": False, "penalties": 0, "xp_deducted": 0}
+    earliest = today - timedelta(days=g.HARDCORE_LOOKBACK_DAYS)
+    freezes = database.freeze_dates()
+    penalized = 0
+    deducted = 0
+    for habit in database.list_habits():
+        if habit["schedule"] != "daily":
+            continue
+        dates = database.checkin_dates(habit["id"])
+        frozen = freezes.get(habit["id"], set())
+        start = max(date.fromisoformat(habit["created_at"]), earliest)
+        day = start
+        while day < today:
+            iso = day.isoformat()
+            if iso not in dates and iso not in frozen and not database.has_xp_log(habit["id"], iso, "hardcore"):
+                loss = min(g.HARDCORE_PENALTY_XP, max(database.xp(), 0))
+                if loss <= 0:
+                    break  # no XP left to lose — stop scanning further back
+                database.add_xp(-loss)
+                database.log_xp(iso, -loss, "hardcore", habit["id"])
+                penalized += 1
+                deducted += loss
+            day += timedelta(days=1)
+    return {"enabled": True, "penalties": penalized, "xp_deducted": deducted}
+
+
 # --- settings (sound / effects) -------------------------------------------------
 def get_settings(database: db.Database) -> dict:
     """Stored settings merged over the defaults (unknown keys ignored)."""
@@ -436,11 +472,13 @@ def habit_status(database: db.Database, habit, today: date | None = None,
 
 def full_state(database: db.Database, today: date | None = None, category: str | None = None,
                achievements_path=None) -> dict:
+    hardcore = apply_hardcore_penalties(database, today)
     habits = [habit_status(database, h, today, achievements_path) for h in database.list_habits(category)]
     return {"player": player_state(database), "habits": habits,
             "quests": list_quests(database, today=today),
             "weekly_quests": list_weekly_quests(database, today=today),
             "settings": get_settings(database),
+            "hardcore": hardcore,
             "badges": [dict(b) for b in database.list_badges()]}
 
 
