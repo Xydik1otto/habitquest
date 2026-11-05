@@ -1,9 +1,9 @@
 # ⚔️ HabitQuest
 
-![tests](https://img.shields.io/badge/tests-132%20passing-brightgreen)
+![tests](https://img.shields.io/badge/tests-179%20passing-brightgreen)
 ![python](https://img.shields.io/badge/python-3.12%2B-blue)
 ![license](https://img.shields.io/badge/license-MIT-gold)
-![status](https://img.shields.io/badge/version-0.4.0-orange)
+![status](https://img.shields.io/badge/version-1.0.0-orange)
 
 **Local-first gamified habit tracker** — звички як RPG: XP, рівні, серії з «заморозками»,
 щомісячні **бос-бої**, **крамниця щитів** та підсумки місяця. Усе локально, жодних підписок,
@@ -85,7 +85,7 @@ pip install -r requirements.txt
 python -m uvicorn app.main:app --reload
 # http://127.0.0.1:8000  →  «Встановити» як PWA з меню браузера
 
-pytest           # 132 тести
+pytest           # 179 тестів
 ./scripts/smoke.sh  # швидкий smoke API (Pass/Fail)
 ```
 
@@ -103,7 +103,9 @@ pytest           # 132 тести
 - [x] v0.1.0-alpha: боси-квести, PWA, JSON-досягнення
 - [x] v0.2.x: крамниця щитів, детальні бос-бої, категорії, підсумок місяця
 - [x] v0.4.0: графіки серій, тижневі квести, звук/анімації, дашборд, редактор досягнень
-- [ ] v1.0: іконки-редактор, темна/світла тема, річні heatmap-и
+- [x] v1.0.0: бібліотека шаблонів звичок, цитата дня, хардкор-режим, категорії у recap,
+  i18n UA/EN, first-run демо, INSTALL.md, packaging, CSV-експорт, a11y, open-source hygiene
+- [ ] v1.1: іконки-редактор, темна/світла тема, річні heatmap-и
 - [ ] Pro Pack (one-time): додаткові теми, кастомні досягнення, річні звіти
 
 ## Contributing / Розробка

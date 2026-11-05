@@ -1,9 +1,9 @@
 # ⚔️ HabitQuest
 
-![tests](https://img.shields.io/badge/tests-153%20passing-brightgreen)
+![tests](https://img.shields.io/badge/tests-179%20passing-brightgreen)
 ![python](https://img.shields.io/badge/python-3.12%2B-blue)
 ![license](https://img.shields.io/badge/license-MIT-gold)
-![status](https://img.shields.io/badge/version-0.4.0-orange)
+![status](https://img.shields.io/badge/version-1.0.0-orange)
 
 **Local-first gamified habit tracker** — habits as an RPG: XP, levels, streaks with
 «freezes», monthly **boss battles**, a **shield shop** and monthly recaps. Fully local:
@@ -85,7 +85,7 @@ pip install -r requirements.txt
 python -m uvicorn app.main:app --reload
 # http://127.0.0.1:8000  →  "Install" as a PWA from the browser menu
 
-pytest              # 153 tests
+pytest              # 179 tests
 ./scripts/smoke.sh  # quick API smoke test (PASS/FAIL)
 ```
 
@@ -103,7 +103,9 @@ pytest              # 153 tests
 - [x] v0.1.0-alpha: boss quests, PWA, JSON achievements
 - [x] v0.2.x: shield shop, detailed boss battles, categories, monthly recap
 - [x] v0.4.0: streak charts, weekly quests, sound/effects, dashboard, achievements editor
-- [ ] v1.0: icon editor, dark/light theme, yearly heatmaps
+- [x] v1.0.0: habit template library, quote of the day, hardcore mode, category stats in recap,
+  i18n UA/EN, first-run demo, INSTALL.md, packaging, CSV export, a11y, open-source hygiene
+- [ ] v1.1: icon editor, dark/light theme, yearly heatmaps
 - [ ] Pro Pack (one-time): extra themes, custom achievements, yearly reports
 
 ## Contributing
