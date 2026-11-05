@@ -53,3 +53,12 @@ button.primary, #new-habit button { background:var(--gold); color:#222; border:n
 button.cat { font-size:.8rem; padding:4px 10px; opacity:.6; }
 button.cat.active { opacity:1; border-color:var(--gold); color:var(--gold); }
 .cat-chip { font-size:.7rem; color:#888; }
+
+/* --- monthly recap --- */
+.recap-controls { display:flex; gap:8px; margin-bottom:10px; }
+.recap-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:6px 18px; font-size:.9rem; }
+.recap-bars { display:flex; align-items:flex-end; gap:8px; height:90px; margin-top:12px; }
+.rbar { display:flex; flex-direction:column; justify-content:flex-end; align-items:center; width:34px; height:100%; }
+.rbar > div { width:100%; background:linear-gradient(180deg,var(--gold),var(--fire)); border-radius:4px 4px 0 0; min-height:2px; }
+.rbar > span { font-size:.65rem; color:#888; margin-top:3px; }
+.recap-top { margin-top:10px; font-size:.85rem; color:#aaa; }

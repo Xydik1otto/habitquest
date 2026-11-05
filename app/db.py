@@ -254,6 +254,23 @@ class Database:
         ).fetchone()
         return row["s"]
 
+    def xp_flow_in_month(self, month: str) -> tuple[int, int]:
+        """(earned, spent) XP within 'YYYY-MM' across all reasons."""
+        row = self.conn.execute(
+            "SELECT COALESCE(SUM(CASE WHEN amount>0 THEN amount ELSE 0 END), 0) AS earned, "
+            "COALESCE(SUM(CASE WHEN amount<0 THEN -amount ELSE 0 END), 0) AS spent "
+            "FROM xp_log WHERE substr(date, 1, 7)=?",
+            (month,),
+        ).fetchone()
+        return row["earned"], row["spent"]
+
+    def checkin_counts_by_habit_in_month(self, month: str) -> dict[int, int]:
+        rows = self.conn.execute(
+            "SELECT habit_id, COUNT(*) AS n FROM checkins WHERE substr(date, 1, 7)=? GROUP BY habit_id",
+            (month,),
+        ).fetchall()
+        return {r["habit_id"]: r["n"] for r in rows}
+
     # -- badges ---------------------------------------------------------------
     def add_badge(self, badge_id: str, label: str, earned_at: str) -> bool:
         cur = self.conn.execute(

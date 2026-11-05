@@ -188,6 +188,65 @@ def buy_shield(database: db.Database, qty: int = 1, today: date | None = None) -
     return {"bought": qty, "cost": cost, "coins": database.coins(), "shields": database.shields()}
 
 
+# --- monthly recap -------------------------------------------------------------
+def recap(database: db.Database, month: str | None = None, today: date | None = None) -> dict:
+    """Month summary: XP flow, streaks, per-category activity, quest wins."""
+    month = month or g.month_key(today or date.today())
+    try:
+        if date.fromisoformat(month + "-01").strftime("%Y-%m") != month:
+            raise ValueError
+    except ValueError as e:
+        raise ValueError(f"invalid month {month!r}; expected 'YYYY-MM'") from e
+
+    dates = set(database.checkins_in_month(None, month))
+    earned, spent = database.xp_flow_in_month(month)
+    counts_by_habit = database.checkin_counts_by_habit_in_month(month)
+
+    per_category = {c: {"checkins": 0, "habits": 0} for c in g.CATEGORIES}
+    top_habits = []
+    for h in database.list_habits():
+        n = counts_by_habit.get(h["id"], 0)
+        top_habits.append({"id": h["id"], "name": h["name"], "icon": h["icon"], "checkins": n})
+        if h["category"] in per_category:
+            per_category[h["category"]]["checkins"] += n
+            if n:
+                per_category[h["category"]]["habits"] += 1
+    top_habits.sort(key=lambda x: -x["checkins"])
+
+    # weekly buckets (ISO weeks that overlap the month, clipped to it)
+    weeks: dict[str, int] = {}
+    for d in dates:
+        y, w, _ = date.fromisoformat(d).isocalendar()
+        weeks[f"{y}-W{w:02d}"] = weeks.get(f"{y}-W{w:02d}", 0) + 1
+    week_bars = [{"week": k, "count": v} for k, v in sorted(weeks.items())]
+
+    best_day, best_n = None, 0
+    day_counts: dict[str, int] = {}
+    for d in dates:
+        day_counts[d] = day_counts.get(d, 0) + 1
+    for d in sorted(day_counts):
+        if day_counts[d] > best_n:
+            best_day, best_n = d, day_counts[d]
+
+    quests = database.list_quests(month)
+    return {
+        "month": month,
+        "checkins": len(dates),
+        "active_days": len(day_counts),
+        "xp_earned": earned,
+        "xp_spent": spent,
+        "xp_net": earned - spent,
+        "longest_streak": g.longest_streak(dates),
+        "best_day": best_day,
+        "best_day_checkins": best_n,
+        "per_category": per_category,
+        "top_habits": top_habits[:5],
+        "weeks": week_bars,
+        "quests_total": len(quests),
+        "quests_won": sum(1 for q in quests if q["completed"]),
+    }
+
+
 def player_state(database: db.Database) -> dict:
     return g.level_progress(database.xp())
 

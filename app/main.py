@@ -114,6 +114,14 @@ def badges() -> dict:
     return {"badges": [dict(b) for b in get_db().list_badges()]}
 
 
+@app.get("/api/recap")
+def recap(month: str | None = None) -> dict:
+    try:
+        return service.recap(get_db(), month)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
 @app.post("/api/freeze")
 def freeze(payload: FreezeIn) -> dict:
     try:

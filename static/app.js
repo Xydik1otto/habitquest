@@ -125,6 +125,35 @@ function renderHeatmap(grid) {
   $("#week-heatmap").innerHTML = svg;
 }
 
+// ---------- monthly recap ----------
+function renderRecap(r) {
+  const maxWeek = Math.max(1, ...r.weeks.map((w) => w.count));
+  const cats = Object.entries(r.per_category)
+    .filter(([, v]) => v.checkins > 0)
+    .map(([k, v]) => `${CAT_LABELS[k]}: <b>${v.checkins}</b>`)
+    .join(" · ") || "—";
+  const bars = r.weeks.map((w) =>
+    `<div class="rbar" title="${w.week}: ${w.count}"><div style="height:${Math.round(100 * w.count / maxWeek)}%"></div><span>${w.week.slice(5)}</span></div>`).join("");
+  $("#recap").innerHTML = `
+    <div class="recap-grid">
+      <div>🧾 Чек-інів: <b>${r.checkins}</b> (${r.active_days} активних дн.)</div>
+      <div>🔥 Найдовша серія: <b>${r.longest_streak}</b> дн.</div>
+      <div>⭐ XP зароблено: <b>${r.xp_earned}</b> · витрачено: <b>${r.xp_spent}</b></div>
+      <div>👹 Босів переможено: <b>${r.quests_won}/${r.quests_total}</b></div>
+      <div>📅 Найкращий день: <b>${r.best_day || "—"}</b>${r.best_day ? ` (${r.best_day_checkins} чек-інів)` : ""}</div>
+      <div>За категоріями: ${cats}</div>
+    </div>
+    <div class="recap-bars">${bars}</div>
+    ${r.top_habits.length ? `<div class="recap-top">Топ: ${r.top_habits.filter((h) => h.checkins).slice(0, 3).map((h) => `${h.icon} ${h.name} (${h.checkins})`).join(", ") || "—"}</div>` : ""}`;
+}
+
+async function loadRecap(month) {
+  try { renderRecap(await api(`/api/recap${month ? `?month=${month}` : ""}`)); }
+  catch (e) { $("#recap").textContent = e.message; }
+}
+
+$("#recap-load").addEventListener("click", () => loadRecap($("#recap-month").value));
+
 // ---------- streak shield shop ----------
 function renderShop(shop) {
   $("#shop").innerHTML = `
@@ -186,6 +215,7 @@ async function load() {
   renderStats(await api("/api/stats"), earned, (await api("/api/achievements")).all);
   renderShop(await api("/api/shop"));
   renderBadges((await api("/api/badges")).badges);
+  loadRecap($("#recap-month").value);
 }
 
 function renderBadges(badges) {
