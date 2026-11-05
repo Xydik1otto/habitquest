@@ -85,6 +85,10 @@ static/ (index.html, app.js, style.css)
   картку прогресу (лише агрегати: XP, рівень, чек-іни, стрик), а
   `POST /api/buddy/compare` порівнює її з файлом друга; без сервера
   (v1.x, ідея «local co-op» із розділу «Ризики»).
+- **Сезонні події** — повторювані події за діапазонами дат (New Year
+  Challenge, Spring Reset, Summer Streak, Halloween Boss Week):
+  `GET /api/event` показує активну, `POST /api/event/claim` дає разовий
+  XP-бонус один раз на день події (v1.x).
 
 ## 7. Roadmap безкоштовний
 

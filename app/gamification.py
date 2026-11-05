@@ -471,3 +471,29 @@ def buddy_compare(mine: dict, theirs: dict) -> dict:
     ahead = "mine" if wins["mine"] > wins["theirs"] else (
         "theirs" if wins["theirs"] > wins["mine"] else "tie")
     return {"per_metric": per_metric, "wins": wins, "ahead": ahead}
+
+
+# --- seasonal events ------------------------------------------------------------
+# Date ranges are (month-day) pairs so they recur every year; "new_year"
+# wraps around the calendar year boundary.
+SEASONAL_EVENTS = (
+    {"key": "new_year", "name": "New Year Challenge", "start": "12-26", "end": "01-07", "xp_bonus": 50},
+    {"key": "spring_reset", "name": "Spring Reset", "start": "03-20", "end": "04-05", "xp_bonus": 30},
+    {"key": "summer_streak", "name": "Summer Streak", "start": "06-20", "end": "07-10", "xp_bonus": 30},
+    {"key": "halloween", "name": "Halloween Boss Week", "start": "10-24", "end": "10-31", "xp_bonus": 75},
+)
+
+
+def seasonal_event(today: date | None = None) -> dict | None:
+    """The seasonal event active on `today` (None when nothing runs)."""
+    today = today or date.today()
+    md = f"{today.month:02d}-{today.day:02d}"
+    for event in SEASONAL_EVENTS:
+        start, end = event["start"], event["end"]
+        if start <= end:
+            active = start <= md <= end
+        else:  # wraps over New Year
+            active = md >= start or md <= end
+        if active:
+            return dict(event)
+    return None

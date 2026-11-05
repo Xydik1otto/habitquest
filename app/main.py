@@ -317,6 +317,22 @@ def buddy_compare(payload: BuddyIn) -> dict:
         raise HTTPException(400, str(e))
 
 
+@app.get("/api/event")
+def seasonal_event() -> dict:
+    """The seasonal event active today ({"active": false} when none)."""
+    event = g.seasonal_event()
+    return {"active": event is not None, **(event or {})}
+
+
+@app.post("/api/event/claim")
+def claim_event() -> dict:
+    """Claim the once-per-day seasonal XP bonus."""
+    try:
+        return service.claim_seasonal_bonus(get_db())
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
 @app.get("/api/export/csv")
 def export_csv(kind: str = "habits") -> dict:
     """CSV export (spreadsheet-friendly): kind=habits|checkins."""

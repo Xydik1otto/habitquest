@@ -559,6 +559,28 @@ def buddy_compare(database: db.Database, buddy_snapshot: dict) -> dict:
     return g.buddy_compare(buddy_file(database), buddy_snapshot)
 
 
+# --- seasonal events -------------------------------------------------------------
+def claim_seasonal_bonus(database: db.Database, today: date | None = None) -> dict:
+    """Once-per-day XP bonus while a seasonal event is running."""
+    event = g.seasonal_event(today)
+    if event is None:
+        raise ValueError("no seasonal event is active today")
+    day = today_iso(today)
+    if database.has_player_log(day, "seasonal"):
+        return {"claimed": False, "event": event}
+    bonus = event["xp_bonus"]
+    database.add_xp(bonus)
+    database.add_coins(bonus)
+    database.log_xp(day, bonus, "seasonal")
+    return {
+        "claimed": True,
+        "event": event,
+        "xp_gained": bonus,
+        "player_xp": database.xp(),
+        "coins": database.coins(),
+    }
+
+
 def habit_status(database: db.Database, habit, today: date | None = None,
                  achievements_path=None) -> dict:
     today = today or date.today()
