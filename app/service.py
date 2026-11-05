@@ -335,6 +335,48 @@ def apply_hardcore_penalties(database: db.Database, today: date | None = None) -
     return {"enabled": True, "penalties": penalized, "xp_deducted": deducted}
 
 
+# --- first-run demo data (opt-in) ------------------------------------------------
+DEMO_HABITS = [
+    {"name": "Пити воду", "icon": "💧", "schedule": "daily", "target_per_period": 1, "category": "health"},
+    {"name": "Тренування", "icon": "🏋", "schedule": "daily", "target_per_period": 1, "category": "health"},
+    {"name": "Читати 20 хвилин", "icon": "📚", "schedule": "daily", "target_per_period": 1, "category": "mind"},
+    {"name": "Глибока робота 1 година", "icon": "🎯", "schedule": "daily", "target_per_period": 1, "category": "work"},
+    {"name": "15 хвилин прибирання", "icon": "🧹", "schedule": "daily", "target_per_period": 1, "category": "home"},
+    {"name": "Прання", "icon": "🧺", "schedule": "weekly", "target_per_period": 1, "category": "home"},
+]
+
+
+def seed_demo_data(database: db.Database, days: int = 21, today: date | None = None) -> dict:
+    """Create the demo set (opt-in from the first-run screen): 6 habits with a
+    realistic ~80% check-in history, one monthly boss quest and a weekly quest."""
+    today = today or date.today()
+    if database.list_habits():
+        raise ValueError("demo data can only be seeded into an empty tracker")
+    ids = []
+    for h in DEMO_HABITS:
+        ids.append(database.add_habit(h["name"], h["icon"], h["schedule"],
+                                      h["target_per_period"], today_iso(today), h["category"]))
+    rng = 7  # deterministic pseudo-random pattern: check-in unless day % 5 == 4
+    for hid in ids[:5]:  # daily habits get history
+        for i in range(days, 0, -1):
+            day = today - timedelta(days=i)
+            if day.day % 5 == 4:
+                continue  # realistic gap days
+            checkin(database, hid, day.isoformat())
+    # a monthly boss the player is already fighting + a weekly quest in progress
+    create_quest(database, ids[0], 20, month=g.month_key(today), today=today)
+    try:
+        create_weekly_quest(database, ids[:3], 5, today=today)
+    except ValueError:
+        pass  # weekly quest for this ISO week already exists — fine
+    return {"habits": len(ids), "days": days}
+
+
+def is_first_run(database: db.Database) -> bool:
+    """True when the tracker has no habits yet (the demo banner should show)."""
+    return not database.list_habits()
+
+
 # --- i18n ------------------------------------------------------------------------
 def get_lang(database: db.Database) -> str:
     """Persisted UI language ('uk' | 'en'); defaults to 'uk'."""

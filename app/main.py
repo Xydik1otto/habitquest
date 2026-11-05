@@ -140,6 +140,19 @@ def put_lang(payload: LangIn) -> dict:
         raise HTTPException(400, str(e))
 
 
+@app.get("/api/first-run")
+def first_run() -> dict:
+    return {"first_run": service.is_first_run(get_db())}
+
+
+@app.post("/api/demo")
+def demo() -> dict:
+    try:
+        return service.seed_demo_data(get_db())
+    except ValueError as e:
+        raise HTTPException(409, str(e))
+
+
 @app.delete("/api/habits/{habit_id}")
 def delete_habit(habit_id: int) -> dict:
     get_db().delete_habit(habit_id)

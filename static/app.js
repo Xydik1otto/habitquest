@@ -480,6 +480,7 @@ async function load() {
     applyStrings((await api(`/api/i18n?lang=${lang}`)).strings);
   } catch (e) { /* i18n is optional chrome — keep static UA text */ }
   renderPlayer(state.player);
+  renderFirstRun(state.habits.length === 0);
   renderSettings();
   renderCategoryFilter();
   renderQuote();
@@ -503,6 +504,25 @@ function renderBadges(badges) {
   $("#badges").innerHTML = badges.length
     ? badges.map((b) => `<span class="achv badge">${b.label}</span>`).join("")
     : "";
+}
+
+// ---------- first-run demo (opt-in banner) ----------
+function renderFirstRun(firstRun) {
+  const el = $("#first-run");
+  if (!el) return;
+  if (!firstRun) { el.innerHTML = ""; return; }
+  el.innerHTML = `
+    <div class="first-run">
+      <span>👋 Перший запуск? Спробуйте з демо-даними (6 звичок, 3 тижні історії, бос-бій) або додайте свою першу звичку нижче.</span>
+      <button id="btn-demo" class="primary">🎮 Завантажити демо</button>
+    </div>`;
+  $("#btn-demo").addEventListener("click", async () => {
+    try {
+      await api("/api/demo", { method: "POST" });
+      blip();
+      load();
+    } catch (e) { alert(e.message); }
+  });
 }
 
 // ---------- language switcher (persisted server-side) ----------
