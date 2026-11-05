@@ -581,5 +581,6 @@ def stats(database: db.Database, today: date | None = None) -> dict:
         "longest_streak": g.longest_streak(all_dates),
         "completion_rate_30d": g.completion_rate_30d(all_dates, today),
         "total_checkins": len(all_dates),
+        "weekday_stats": g.weekday_stats(all_dates),
         "player": player_state(database),
     }

@@ -383,3 +383,31 @@ def longest_streak(checkin_dates: set[str]) -> int:
         cur = cur + 1 if (cur_d - prev).days == 1 else 1
         best = max(best, cur)
     return best
+
+
+WEEKDAY_NAMES = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
+
+
+def weekday_stats(checkin_dates: set[str]) -> dict:
+    """Streak-support stats per day of week over the full history.
+
+    Returns counts per ISO weekday (1=Mon .. 7=Sun), the best weekday
+    (None when there are no check-ins yet) and the average number of
+    check-ins per week across the ISO weeks covered by the data.
+    """
+    counts = {i: 0 for i in range(1, 8)}
+    weeks: set[tuple[int, int]] = set()
+    for iso in checkin_dates:
+        d = date.fromisoformat(iso)
+        counts[d.isoweekday()] += 1
+        weeks.add(d.isocalendar()[:2])
+    if not checkin_dates:
+        return {"counts": counts, "best_weekday": None, "best_count": 0, "average_per_week": 0.0}
+    best = max(counts, key=lambda i: counts[i])  # ties resolve to the earlier weekday
+    return {
+        "counts": counts,
+        "best_weekday": best,
+        "best_weekday_name": WEEKDAY_NAMES[best - 1],
+        "best_count": counts[best],
+        "average_per_week": round(len(checkin_dates) / len(weeks), 2),
+    }
