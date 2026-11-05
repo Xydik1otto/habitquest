@@ -1,5 +1,6 @@
 """Tests: i18n — UA/EN UI dictionaries, persisted language choice, no Russian."""
 import json
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -35,10 +36,12 @@ def test_i18n_json_has_complete_uk_and_en_dicts():
 
 def test_no_russian_localization_anywhere():
     """Policy: UA/EN only. Russian-specific Cyrillic letters must not appear."""
+    # built via codepoints so this test file itself contains no Russian letters
+    russian_only = "".join(chr(c) for c in (0x044B, 0x044A, 0x044D, 0x0451, 0x042B, 0x042A, 0x042D, 0x0401))
     for json_name in ("i18n.json", "templates.json", "quotes.json"):
-        text = (main.__file__.rsplit("main.py", 1)[0] + json_name).__str__()
-        data = open(text, encoding="utf-8").read()
-        for letter in "ыыъэЁЫЪЭ":  # letters absent from Ukrainian alphabet
+        path = Path(g.__file__).parent / json_name
+        data = path.read_text(encoding="utf-8")
+        for letter in russian_only:
             assert letter not in data, f"Russian letter {letter!r} found in {json_name}"
     # the i18n dictionary never adds a third language
     dict_ = g.load_i18n()

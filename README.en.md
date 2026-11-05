@@ -106,6 +106,15 @@ pytest              # 153 tests
 - [ ] v1.0: icon editor, dark/light theme, yearly heatmaps
 - [ ] Pro Pack (one-time): extra themes, custom achievements, yearly reports
 
+## Contributing
+
+The project is open-source (MIT). Contributor guide: [CONTRIBUTING.md](CONTRIBUTING.md);
+security issues go privately via [SECURITY.md](SECURITY.md). Bugs and ideas — through the
+issue templates (Ukrainian or English; Russian localization is not accepted).
+
+Recommended GitHub topics: `habits`, `gamification`, `self-improvement`, `fastapi`,
+`pwa`, `local-first`.
+
 ## License
 
 MIT — see [LICENSE](LICENSE). 100% local: no telemetry, no accounts, no cloud.

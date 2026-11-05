@@ -106,6 +106,15 @@ pytest           # 132 тести
 - [ ] v1.0: іконки-редактор, темна/світла тема, річні heatmap-и
 - [ ] Pro Pack (one-time): додаткові теми, кастомні досягнення, річні звіти
 
+## Contributing / Розробка
+
+Проєкт open-source (MIT). Інструкція для учасників — [CONTRIBUTING.md](CONTRIBUTING.md);
+проблеми безпеки — приватно, [SECURITY.md](SECURITY.md). Баг-репорти та пропозиції —
+через шаблони issues (українська або англійська мова; російську локалізацію не приймаємо).
+
+Рекомендовані GitHub topics: `habits`, `gamification`, `self-improvement`, `fastapi`,
+`pwa`, `local-first`.
+
 ## Ліцензія
 
 MIT — див. [LICENSE](LICENSE). 100% локально: жодної телеметрії, акаунтів чи хмари.
