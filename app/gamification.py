@@ -383,3 +383,117 @@ def longest_streak(checkin_dates: set[str]) -> int:
         cur = cur + 1 if (cur_d - prev).days == 1 else 1
         best = max(best, cur)
     return best
+
+
+WEEKDAY_NAMES = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
+
+
+def weekday_stats(checkin_dates: set[str]) -> dict:
+    """Streak-support stats per day of week over the full history.
+
+    Returns counts per ISO weekday (1=Mon .. 7=Sun), the best weekday
+    (None when there are no check-ins yet) and the average number of
+    check-ins per week across the ISO weeks covered by the data.
+    """
+    counts = {i: 0 for i in range(1, 8)}
+    weeks: set[tuple[int, int]] = set()
+    for iso in checkin_dates:
+        d = date.fromisoformat(iso)
+        counts[d.isoweekday()] += 1
+        weeks.add(d.isocalendar()[:2])
+    if not checkin_dates:
+        return {"counts": counts, "best_weekday": None, "best_count": 0, "average_per_week": 0.0}
+    best = max(counts, key=lambda i: counts[i])  # ties resolve to the earlier weekday
+    return {
+        "counts": counts,
+        "best_weekday": best,
+        "best_weekday_name": WEEKDAY_NAMES[best - 1],
+        "best_count": counts[best],
+        "average_per_week": round(len(checkin_dates) / len(weeks), 2),
+    }
+
+
+# --- buddy mode (local co-op via shared file) -----------------------------------
+BUDDY_FILE_VERSION = "habitquest-buddy-v1"
+BUDDY_METRICS = ("player_xp", "level", "total_checkins", "longest_streak")
+
+
+def buddy_snapshot(player_xp: int, total_checkins: int, longest_streak: int) -> dict:
+    """Portable progress card: save it to a file and share with a friend.
+
+    No personal data — only aggregate numbers, so the file can be exchanged
+    over any channel (messenger, USB stick) without a server.
+    """
+    return {
+        "version": BUDDY_FILE_VERSION,
+        "player_xp": int(player_xp),
+        "level": level_for_xp(player_xp),
+        "total_checkins": int(total_checkins),
+        "longest_streak": int(longest_streak),
+    }
+
+
+def _parse_buddy_snapshot(data: object, side: str) -> dict:
+    if not isinstance(data, dict):
+        raise ValueError(f"{side}: buddy snapshot must be an object")
+    if data.get("version") != BUDDY_FILE_VERSION:
+        raise ValueError(
+            f"{side}: unsupported buddy file version {data.get('version')!r}; "
+            f"expected {BUDDY_FILE_VERSION!r}"
+        )
+    out = {}
+    for key in BUDDY_METRICS:
+        value = data.get(key)
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            raise ValueError(f"{side}: field {key!r} must be a non-negative integer")
+        out[key] = value
+    return out
+
+
+def buddy_compare(mine: dict, theirs: dict) -> dict:
+    """Compare two buddy snapshots metric by metric.
+
+    Raises ValueError when either side is not a valid buddy snapshot.
+    """
+    a = _parse_buddy_snapshot(mine, "mine")
+    b = _parse_buddy_snapshot(theirs, "theirs")
+    per_metric = {}
+    wins = {"mine": 0, "theirs": 0, "tie": 0}
+    for key in BUDDY_METRICS:
+        if a[key] > b[key]:
+            leader = "mine"
+        elif b[key] > a[key]:
+            leader = "theirs"
+        else:
+            leader = "tie"
+        wins[leader] += 1
+        per_metric[key] = {"mine": a[key], "theirs": b[key], "leader": leader}
+    ahead = "mine" if wins["mine"] > wins["theirs"] else (
+        "theirs" if wins["theirs"] > wins["mine"] else "tie")
+    return {"per_metric": per_metric, "wins": wins, "ahead": ahead}
+
+
+# --- seasonal events ------------------------------------------------------------
+# Date ranges are (month-day) pairs so they recur every year; "new_year"
+# wraps around the calendar year boundary.
+SEASONAL_EVENTS = (
+    {"key": "new_year", "name": "New Year Challenge", "start": "12-26", "end": "01-07", "xp_bonus": 50},
+    {"key": "spring_reset", "name": "Spring Reset", "start": "03-20", "end": "04-05", "xp_bonus": 30},
+    {"key": "summer_streak", "name": "Summer Streak", "start": "06-20", "end": "07-10", "xp_bonus": 30},
+    {"key": "halloween", "name": "Halloween Boss Week", "start": "10-24", "end": "10-31", "xp_bonus": 75},
+)
+
+
+def seasonal_event(today: date | None = None) -> dict | None:
+    """The seasonal event active on `today` (None when nothing runs)."""
+    today = today or date.today()
+    md = f"{today.month:02d}-{today.day:02d}"
+    for event in SEASONAL_EVENTS:
+        start, end = event["start"], event["end"]
+        if start <= end:
+            active = start <= md <= end
+        else:  # wraps over New Year
+            active = md >= start or md <= end
+        if active:
+            return dict(event)
+    return None

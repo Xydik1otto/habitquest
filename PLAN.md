@@ -76,6 +76,19 @@ static/ (index.html, app.js, style.css)
 - **v1.1** — PWA (installable), сповіщення локальні (web notifications).
 - **v1.2** — річні heatmap-и, додаткові теми. Roadmap безкоштовний: усі фічі
   open-source, монетизації немає.
+- **Статистика днів тижня** — у `/api/stats` додано `weekday_stats`: скільки
+  чек-інів припадає на кожен день тижня, найкращий день та середню кількість
+  чек-інів за тиждень (v1.x).
+- **PDF-звіти** — `GET /api/report.pdf?month=YYYY-MM` віддає місячний рекап
+  як PDF (генератор на чистій stdlib, без нових залежностей) (v1.x).
+- **Buddy-режим через файл-обмін** — `GET /api/buddy/file` будує портативну
+  картку прогресу (лише агрегати: XP, рівень, чек-іни, стрик), а
+  `POST /api/buddy/compare` порівнює її з файлом друга; без сервера
+  (v1.x, ідея «local co-op» із розділу «Ризики»).
+- **Сезонні події** — повторювані події за діапазонами дат (New Year
+  Challenge, Spring Reset, Summer Streak, Halloween Boss Week):
+  `GET /api/event` показує активну, `POST /api/event/claim` дає разовий
+  XP-бонус один раз на день події (v1.x).
 
 ## 7. Roadmap безкоштовний
 

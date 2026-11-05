@@ -522,6 +522,65 @@ def player_state(database: db.Database) -> dict:
     return g.level_progress(database.xp())
 
 
+def report_pdf(database: db.Database, month: str | None = None, today: date | None = None) -> bytes:
+    """Monthly recap as a PDF document (stdlib-only generator)."""
+    from .pdf_report import build_report_pdf
+
+    r = recap(database, month, today)
+    lines = [
+        f"Month: {r['month']}",
+        f"Check-in days: {r['checkins']}",
+        f"Active days: {r['active_days']}",
+        f"XP earned: {r['xp_earned']}   XP spent: {r['xp_spent']}   Net: {r['xp_net']}",
+        f"Longest streak: {r['longest_streak']}",
+        f"Best day: {r['best_day'] or 'none'} ({r['best_day_checkins']} check-ins)",
+        f"Quests won: {r['quests_won']} of {r['quests_total']}",
+        "",
+        "Top habits:",
+    ]
+    for h in r["top_habits"]:
+        lines.append(f"  {h['icon']} {h['name']}: {h['checkins']} check-ins")
+    return build_report_pdf(lines, title=f"HabitQuest Monthly Report {r['month']}")
+
+
+# --- buddy mode (file exchange, no server) --------------------------------------
+def buddy_file(database: db.Database) -> dict:
+    """Aggregate progress card to save as a file and share with a buddy."""
+    dates = database.checkin_dates()
+    return g.buddy_snapshot(
+        player_xp=database.xp(),
+        total_checkins=len(dates),
+        longest_streak=g.longest_streak(dates),
+    )
+
+
+def buddy_compare(database: db.Database, buddy_snapshot: dict) -> dict:
+    """Compare my progress with a buddy's snapshot loaded from their file."""
+    return g.buddy_compare(buddy_file(database), buddy_snapshot)
+
+
+# --- seasonal events -------------------------------------------------------------
+def claim_seasonal_bonus(database: db.Database, today: date | None = None) -> dict:
+    """Once-per-day XP bonus while a seasonal event is running."""
+    event = g.seasonal_event(today)
+    if event is None:
+        raise ValueError("no seasonal event is active today")
+    day = today_iso(today)
+    if database.has_player_log(day, "seasonal"):
+        return {"claimed": False, "event": event}
+    bonus = event["xp_bonus"]
+    database.add_xp(bonus)
+    database.add_coins(bonus)
+    database.log_xp(day, bonus, "seasonal")
+    return {
+        "claimed": True,
+        "event": event,
+        "xp_gained": bonus,
+        "player_xp": database.xp(),
+        "coins": database.coins(),
+    }
+
+
 def habit_status(database: db.Database, habit, today: date | None = None,
                  achievements_path=None) -> dict:
     today = today or date.today()
@@ -581,5 +640,6 @@ def stats(database: db.Database, today: date | None = None) -> dict:
         "longest_streak": g.longest_streak(all_dates),
         "completion_rate_30d": g.completion_rate_30d(all_dates, today),
         "total_checkins": len(all_dates),
+        "weekday_stats": g.weekday_stats(all_dates),
         "player": player_state(database),
     }

@@ -5,7 +5,7 @@ from datetime import date
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -282,6 +282,55 @@ def dashboard() -> dict:
 @app.get("/api/export")
 def export() -> dict:
     return get_db().export()
+
+
+@app.get("/api/report.pdf")
+def report_pdf(month: str | None = None):
+    """Monthly recap as a downloadable PDF (kind: application/pdf)."""
+    try:
+        data = service.report_pdf(get_db(), month)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    return Response(
+        content=data,
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=habitquest-report.pdf"},
+    )
+
+
+class BuddyIn(BaseModel):
+    buddy: dict
+
+
+@app.get("/api/buddy/file")
+def buddy_file() -> dict:
+    """Aggregate progress card to save as a file and share with a friend."""
+    return service.buddy_file(get_db())
+
+
+@app.post("/api/buddy/compare")
+def buddy_compare(payload: BuddyIn) -> dict:
+    """Compare my progress with a buddy snapshot loaded from their file."""
+    try:
+        return service.buddy_compare(get_db(), payload.buddy)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@app.get("/api/event")
+def seasonal_event() -> dict:
+    """The seasonal event active today ({"active": false} when none)."""
+    event = g.seasonal_event()
+    return {"active": event is not None, **(event or {})}
+
+
+@app.post("/api/event/claim")
+def claim_event() -> dict:
+    """Claim the once-per-day seasonal XP bonus."""
+    try:
+        return service.claim_seasonal_bonus(get_db())
+    except ValueError as e:
+        raise HTTPException(400, str(e))
 
 
 @app.get("/api/export/csv")

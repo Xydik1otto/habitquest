@@ -299,6 +299,14 @@ class Database:
         ).fetchone()
         return row is not None
 
+    def has_player_log(self, day: str, reason: str) -> bool:
+        """Whether a player-wide (habit_id IS NULL) xp_log entry exists."""
+        row = self.conn.execute(
+            "SELECT 1 FROM xp_log WHERE habit_id IS NULL AND date=? AND reason=?",
+            (day, reason),
+        ).fetchone()
+        return row is not None
+
     def sum_xp_in_month(self, habit_id: int, month: str, reason: str = "checkin") -> int:
         """Total logged XP for one habit within 'YYYY-MM' (boss damage source)."""
         row = self.conn.execute(
