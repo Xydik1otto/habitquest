@@ -51,6 +51,11 @@ class QuestIn(BaseModel):
     month: str | None = Field(default=None, pattern=r"^\d{4}-\d{2}$")
 
 
+class BuyIn(BaseModel):
+    item: str = "shield"
+    qty: int = Field(default=1, ge=1, le=10)
+
+
 @app.get("/api/state")
 def state() -> dict:
     return service.full_state(get_db())
@@ -78,11 +83,10 @@ def checkin(payload: CheckIn) -> dict:
 
 @app.delete("/api/checkin/{habit_id}/{day}")
 def undo_checkin(habit_id: int, day: str) -> dict:
-    ok = get_db().remove_checkin(habit_id, day)
-    if not ok:
-        raise HTTPException(404, "no such check-in")
-    service._sync_quests_for(get_db(), habit_id, day)
-    return {"removed": True, "player_xp": get_db().xp()}
+    try:
+        return service.undo_checkin(get_db(), habit_id, day)
+    except ValueError as e:
+        raise HTTPException(404, str(e))
 
 
 @app.post("/api/quests")
@@ -104,6 +108,21 @@ def list_quests(month: str | None = None) -> dict:
 def freeze(payload: FreezeIn) -> dict:
     try:
         return service.use_freeze(get_db(), payload.habit_id, payload.date)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@app.get("/api/shop")
+def shop() -> dict:
+    return service.shop_state(get_db())
+
+
+@app.post("/api/shop/buy")
+def shop_buy(payload: BuyIn) -> dict:
+    if payload.item != "shield":
+        raise HTTPException(400, f"unknown shop item {payload.item!r}")
+    try:
+        return service.buy_shield(get_db(), payload.qty)
     except ValueError as e:
         raise HTTPException(400, str(e))
 

@@ -14,6 +14,7 @@ STREAK_CAP = 30  # multiplier caps at streak 30
 FREEZE_WEEKLY_LIMIT = 1
 BOSS_HP_PER_TARGET = 10   # boss HP = target × 10
 QUEST_BONUS_XP = 100      # one-time XP reward for slaying a monthly boss
+SHIELD_PRICE = 50         # shop price of one extra freeze token (streak shield)
 
 ACHIEVEMENTS_FILE = Path(__file__).resolve().parent / "achievements.json"
 

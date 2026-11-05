@@ -43,6 +43,13 @@ CREATE TABLE IF NOT EXISTS quests (
     rewarded INTEGER NOT NULL DEFAULT 0,  -- bonus XP already granted
     UNIQUE (month, habit_id)
 );
+CREATE TABLE IF NOT EXISTS xp_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    date TEXT NOT NULL,
+    amount INTEGER NOT NULL,            -- positive = earned, negative = spent
+    reason TEXT NOT NULL,               -- 'checkin' | 'boss_bonus' | 'shop'
+    habit_id INTEGER                    -- NULL for player-wide events
+);
 """
 
 # Columns added after the initial MVP schema; applied to existing databases.
@@ -193,6 +200,42 @@ class Database:
     def xp(self) -> int:
         return self.conn.execute("SELECT xp FROM player WHERE id=1").fetchone()["xp"]
 
+    # -- wallet (streak shield shop) ------------------------------------------
+    def add_coins(self, amount: int) -> int:
+        self.conn.execute("UPDATE player SET coins = coins + ? WHERE id = 1", (amount,))
+        self.conn.commit()
+        return self.coins()
+
+    def coins(self) -> int:
+        return self.conn.execute("SELECT coins FROM player WHERE id=1").fetchone()["coins"]
+
+    def add_shields(self, delta: int) -> int:
+        self.conn.execute("UPDATE player SET shields = shields + ? WHERE id = 1", (delta,))
+        self.conn.commit()
+        return self.shields()
+
+    def shields(self) -> int:
+        return self.conn.execute("SELECT shields FROM player WHERE id=1").fetchone()["shields"]
+
+    def log_xp(self, day: str, amount: int, reason: str, habit_id: int | None = None) -> None:
+        self.conn.execute(
+            "INSERT INTO xp_log(date, amount, reason, habit_id) VALUES (?,?,?,?)",
+            (day, amount, reason, habit_id),
+        )
+        self.conn.commit()
+
+    def pop_checkin_log(self, habit_id: int, day: str) -> int:
+        """Remove the check-in XP log entry for a day; return its amount (0 if none)."""
+        row = self.conn.execute(
+            "SELECT id, amount FROM xp_log WHERE habit_id=? AND date=? AND reason='checkin'",
+            (habit_id, day),
+        ).fetchone()
+        if row is None:
+            return 0
+        self.conn.execute("DELETE FROM xp_log WHERE id=?", (row["id"],))
+        self.conn.commit()
+        return row["amount"]
+
     # -- portability ----------------------------------------------------------
     def export(self) -> dict:
         habits = [dict(r) for r in self.list_habits()]
@@ -204,13 +247,20 @@ class Database:
              "completed": bool(q["completed"]), "rewarded": bool(q["rewarded"])}
             for q in self.list_quests()
         ]
-        return {"version": 1, "player": {"xp": self.xp()}, "habits": habits,
-                "checkins": checkins, "freezes": freezes, "quests": quests}
+        xp_log = [
+            {"date": r["date"], "amount": r["amount"], "reason": r["reason"], "habit_id": r["habit_id"]}
+            for r in self.conn.execute("SELECT date, amount, reason, habit_id FROM xp_log ORDER BY id")
+        ]
+        row = self.conn.execute("SELECT xp, coins, shields FROM player WHERE id=1").fetchone()
+        return {"version": 1, "player": {"xp": row["xp"], "coins": row["coins"], "shields": row["shields"]},
+                "habits": habits, "checkins": checkins, "freezes": freezes, "quests": quests,
+                "xp_log": xp_log}
 
     def import_data(self, data: dict) -> None:
         self.conn.execute("DELETE FROM checkins")
         self.conn.execute("DELETE FROM freezes")
         self.conn.execute("DELETE FROM quests")
+        self.conn.execute("DELETE FROM xp_log")
         self.conn.execute("DELETE FROM habits")
         for h in data.get("habits", []):
             self.conn.execute(
@@ -228,6 +278,13 @@ class Database:
                  int(q.get("completed", False)), int(q.get("rewarded", False))),
             )
         self.conn.execute("UPDATE player SET xp=? WHERE id=1", (data.get("player", {}).get("xp", 0),))
+        self.conn.execute("UPDATE player SET coins=? WHERE id=1", (data.get("player", {}).get("coins", 0),))
+        self.conn.execute("UPDATE player SET shields=? WHERE id=1", (data.get("player", {}).get("shields", 0),))
+        for e in data.get("xp_log", []):
+            self.conn.execute(
+                "INSERT INTO xp_log(date, amount, reason, habit_id) VALUES (?,?,?,?)",
+                (e["date"], e["amount"], e["reason"], e.get("habit_id")),
+            )
         self.conn.commit()
 
 

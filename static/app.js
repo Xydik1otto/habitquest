@@ -112,6 +112,17 @@ function renderHeatmap(grid) {
   $("#week-heatmap").innerHTML = svg;
 }
 
+// ---------- streak shield shop ----------
+function renderShop(shop) {
+  $("#shop").innerHTML = `
+    <div class="shop-line">💰 Монети: <b>${shop.coins}</b> · 🛡 Щити: <b>${shop.shields}</b>
+      <button id="btn-buy-shield" title="${shop.shield_effect}">Купити щит (${shop.shield_price} 💰)</button></div>`;
+  $("#btn-buy-shield").addEventListener("click", async () => {
+    try { await api("/api/shop/buy", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ item: "shield", qty: 1 }) }); load(); }
+    catch (e) { alert(e.message); }
+  });
+}
+
 // ---------- stats & achievements (definitions come from JSON) ----------
 function renderStats(stats, earnedIds, defs) {
   $("#stats").innerHTML = `
@@ -158,6 +169,7 @@ async function load() {
   const earned = new Set(state.habits.flatMap((h) => h.achievements));
   renderHeatmap(await api("/api/heatmap?weeks=12"));
   renderStats(await api("/api/stats"), earned, (await api("/api/achievements")).all);
+  renderShop(await api("/api/shop"));
 }
 
 // ---------- PWA ----------

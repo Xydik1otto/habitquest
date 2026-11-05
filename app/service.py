@@ -37,7 +37,7 @@ def create_quest(
     return quest_status(database, database.get_quest(qid))
 
 
-def _sync_quest(database: db.Database, quest) -> None:
+def _sync_quest(database: db.Database, quest, day: str = "") -> None:
     """Recompute quest progress/damage from the check-ins of its month.
 
     Grants the one-time boss bonus XP when the boss goes down.
@@ -50,6 +50,8 @@ def _sync_quest(database: db.Database, quest) -> None:
     rewarded = bool(quest["rewarded"])
     if completed and not quest["completed"] and not rewarded:
         database.add_xp(g.QUEST_BONUS_XP)
+        database.add_coins(g.QUEST_BONUS_XP)
+        database.log_xp(day or f"{quest['month']}-01", g.QUEST_BONUS_XP, "boss_bonus", quest["habit_id"])
         rewarded = True
     database.update_quest(quest["id"], progress, damage, completed, rewarded)
 
@@ -94,6 +96,8 @@ def checkin(database: db.Database, habit_id: int, day: str | None = None, note: 
     if created:
         xp_gained = g.xp_for_checkin(streak)
         database.add_xp(xp_gained)
+        database.add_coins(xp_gained)  # spendable wallet (streak shield shop)
+        database.log_xp(day, xp_gained, "checkin", habit_id)
         _sync_quests_for(database, habit_id, day)
     return {
         "habit_id": habit_id,
@@ -102,14 +106,28 @@ def checkin(database: db.Database, habit_id: int, day: str | None = None, note: 
         "xp_gained": xp_gained,
         "streak": _habit_streak(database, habit, today=today or date.today()),
         "player_xp": database.xp(),
+        "coins": database.coins(),
     }
+
+
+def undo_checkin(database: db.Database, habit_id: int, day: str) -> dict:
+    """Remove a check-in and claw back the XP/coins it awarded."""
+    ok = database.remove_checkin(habit_id, day)
+    if not ok:
+        raise ValueError("no such check-in")
+    amount = database.pop_checkin_log(habit_id, day)
+    if amount:
+        database.add_xp(-amount)
+        database.add_coins(-amount)
+    _sync_quests_for(database, habit_id, day)
+    return {"removed": True, "xp_revoked": amount, "player_xp": database.xp(), "coins": database.coins()}
 
 
 def _sync_quests_for(database: db.Database, habit_id: int, day: str) -> None:
     """Recompute the quest of this habit whose month matches the check-in."""
     quest = database.find_quest(day[:7], habit_id)
     if quest is not None:
-        _sync_quest(database, quest)
+        _sync_quest(database, quest, day)
 
 
 def _habit_streak(database: db.Database, habit, today: date | None = None) -> int:
@@ -121,16 +139,45 @@ def _habit_streak(database: db.Database, habit, today: date | None = None) -> in
 
 
 def use_freeze(database: db.Database, habit_id: int, day: str | None = None, today: date | None = None) -> dict:
-    """Spend this week's freeze token on a day (default: today)."""
+    """Freeze a day: free weekly token first, then a bought streak shield."""
     habit = database.get_habit(habit_id)
     if habit is None:
         raise ValueError(f"unknown habit {habit_id}")
     today = today or date.today()
-    if database.freezes_this_week(habit_id, today) >= g.FREEZE_WEEKLY_LIMIT:
-        raise ValueError("freeze token already used this week")
     day = day or today_iso(today)
+    if database.freezes_this_week(habit_id, today) >= g.FREEZE_WEEKLY_LIMIT:
+        # weekly token spent → try to pay with a shield from the shop
+        if database.shields() > 0:
+            database.add_shields(-1)
+            database.add_freeze(habit_id, day)
+            return {"habit_id": habit_id, "date": day, "frozen": True, "source": "shield",
+                    "shields": database.shields()}
+        raise ValueError("no freeze left this week — buy a streak shield in the shop")
     ok = database.add_freeze(habit_id, day)
-    return {"habit_id": habit_id, "date": day, "frozen": ok}
+    return {"habit_id": habit_id, "date": day, "frozen": ok, "source": "weekly"}
+
+
+# --- streak shield shop -------------------------------------------------------
+def shop_state(database: db.Database) -> dict:
+    return {
+        "coins": database.coins(),
+        "shields": database.shields(),
+        "shield_price": g.SHIELD_PRICE,
+        "shield_effect": "extra freeze token: saves a streak day when the weekly free token is gone",
+    }
+
+
+def buy_shield(database: db.Database, qty: int = 1, today: date | None = None) -> dict:
+    """Spend earned XP (coins) on extra freeze tokens."""
+    if not isinstance(qty, int) or isinstance(qty, bool) or not 1 <= qty <= 10:
+        raise ValueError("qty must be between 1 and 10")
+    cost = qty * g.SHIELD_PRICE
+    if database.coins() < cost:
+        raise ValueError(f"not enough coins: need {cost}, have {database.coins()}")
+    database.add_coins(-cost)
+    database.add_shields(qty)
+    database.log_xp(today_iso(today), -cost, "shop")
+    return {"bought": qty, "cost": cost, "coins": database.coins(), "shields": database.shields()}
 
 
 def player_state(database: db.Database) -> dict:

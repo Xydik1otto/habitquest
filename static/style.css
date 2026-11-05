@@ -43,3 +43,6 @@ button.primary, #new-habit button { background:var(--gold); color:#222; border:n
 .boss-meta { font-size:.75rem; color:#888; margin-top:4px; }
 #new-quest { display:flex; gap:8px; margin-top:12px; }
 #new-quest input[type=number] { width:80px; }
+.shop { margin-top:12px; padding-top:10px; border-top:1px solid #26263a; }
+.shop-line { display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:.9rem; }
+#btn-buy-shield { background:var(--gold); color:#222; border:none; font-weight:600; }
