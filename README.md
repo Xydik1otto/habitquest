@@ -1,9 +1,9 @@
 # ⚔️ HabitQuest
 
-![tests](https://img.shields.io/badge/tests-98%20passing-brightgreen)
+![tests](https://img.shields.io/badge/tests-132%20passing-brightgreen)
 ![python](https://img.shields.io/badge/python-3.12%2B-blue)
 ![license](https://img.shields.io/badge/license-MIT-gold)
-![status](https://img.shields.io/badge/version-0.3.0--alpha-orange)
+![status](https://img.shields.io/badge/version-0.4.0-orange)
 
 **Local-first gamified habit tracker** — звички як RPG: XP, рівні, серії з «заморозками»,
 щомісячні **бос-бої**, **крамниця щитів** та підсумки місяця. Усе локально, жодних підписок,
@@ -20,6 +20,22 @@
 - Health & Wellness — найшвидше зростаюча категорія застосунків; habit-трекери стабільно вгорі запитів.
 - Subscription fatigue: більшість трекерів — підписка $4–6/міс за CRUD над локальними даними.
 - Ігрові елементи утримують краще за «сірі» списки, але топові гравці (Habitica, Streaks) — хмара або paywall.
+
+## Чому це існує
+
+Класичне дослідження формування звичок (Lally et al., 2010, *European Journal of Social
+Psychology*, «How are habits formed: Modelling habit formation in the real world») показало
+дві речі, які визначають дизайн HabitQuest:
+
+1. **Автоматичність займає в середньому 66 днів** (медіана; розкид 18–254 дні) —
+   тому гра оперує довгими горизонтами: 30-денні графіки серій, місячні бос-бої,
+   довгі стрики з множником XP, а не «21 день і готово».
+2. **Один пропущений день не руйнує формування звички** — тому в HabitQuest є
+   freeze-токени та «щити»: зірвати серію через хворобу чи відрядження — не програш,
+   і система не карає за людське.
+
+І головне: нагороди мають значення лише тоді, коли дані — ваші. Звідси local-first
+SQLite, експорт одним JSON і нуль підписок.
 
 ## Рішення
 
@@ -38,17 +54,23 @@ Python **FastAPI + SQLite + vanilla JS** (без build-кроку). Нуль з�
   **HP = N×10**; кожен чек-ін завдає шкоди = зароблений XP (сильніший стрик —
   сильніший удар). Перемога → **+100 XP bonus** + колекційний **бейдж**.
 - **Досягнення з JSON** (`app/achievements.json`) — шаблони для Pro Pack:
-  додайте свій об'єкт `{id, name, description, metric, threshold}` — і він працює.
+  додайте свій об'єкт `{id, name, description, metric, threshold}` через UI-редактор
+  — і він працює.
 - **Категорії** звичок: 💚 health / 🧠 mind / 💼 work / 🏠 home — з фільтрами в UI.
+- **📅 Тижневі квести**: 3 звички × 5 чек-інів за тиждень → разова нагорода 150 💰.
+- **🔊 Звук + ✨ анімації**: WebAudio «блим» на чек-ін, level-up конфетті — вимикаються
+  в налаштуваннях.
 
 ### Вьюхи
 
-1. **Day view** — сьогоднішні звички з чекбоксами (daily) і прогресом тижня (weekly), фільтр за категоріями.
+1. **Day view** — сьогоднішні звички з чекбоксами (daily) і прогресом тижня (weekly), фільтр за категоріями, 📈-графік серії за 30 днів на кожну звичку.
 2. **Бос-бій** — HP-бар монстра місяця; прогрес = завдана шкода.
-3. **Week heatmap** — SVG-сітка «тижні × дні».
-4. **Підсумок місяця** — чек-іни, найдовша серія, XP зароблено/витрачено, найкращий день,
+3. **Тижневий квест** — прогрес-бари трьох звичок тижня.
+4. **Дашборд** — SVG-діаграма XP за 30 днів, монети, щити, рівень.
+5. **Week heatmap** — SVG-сітка «тижні × дні».
+6. **Підсумок місяця** — чек-іни, найдовша серія, XP зароблено/витрачено, найкращий день,
    розбивка за категоріями, стовпчикова діаграма тижнів, переможені боси.
-5. **Stats + бейджі + крамниця.**
+7. **Редактор досягнень** + stats + бейджі + крамниця + налаштування.
 
 ### Data portability
 
@@ -63,21 +85,24 @@ pip install -r requirements.txt
 python -m uvicorn app.main:app --reload
 # http://127.0.0.1:8000  →  «Встановити» як PWA з меню браузера
 
-pytest          # 98 тестів
+pytest           # 132 тести
+./scripts/smoke.sh  # швидкий smoke API (Pass/Fail)
 ```
 
 ## API (стисло)
 
 `/api/state` · `POST /api/habits` · `POST /api/checkin` · `DELETE /api/checkin/{h}/{d}` ·
-`/api/freeze` · `POST /api/quests` · `/api/shop` + `POST /api/shop/buy` · `/api/badges` ·
-`/api/recap?month=YYYY-MM` · `/api/heatmap` · `/api/stats` · `/api/achievements` ·
-`/api/export` · `/api/import`
+`GET /api/habits/{id}/series` · `/api/freeze` · `POST /api/quests` · `/api/weekly-quests` ·
+`/api/shop` + `POST /api/shop/buy` · `/api/badges` · `/api/recap?month=YYYY-MM` ·
+`/api/dashboard` · `/api/heatmap` · `/api/stats` · `/api/settings` ·
+`/api/achievements` (+ POST/PUT — редактор) · `/api/export` · `/api/import`
 
 ## Дорожня карта
 
 - [x] MVP: XP/рівні/стрики/freeze/досягнення/heatmap/export-import
 - [x] v0.1.0-alpha: боси-квести, PWA, JSON-досягнення
 - [x] v0.2.x: крамниця щитів, детальні бос-бої, категорії, підсумок місяця
+- [x] v0.4.0: графіки серій, тижневі квести, звук/анімації, дашборд, редактор досягнень
 - [ ] v1.0: іконки-редактор, темна/світла тема, річні heatmap-и
 - [ ] Pro Pack (one-time): додаткові теми, кастомні досягнення, річні звіти
 
