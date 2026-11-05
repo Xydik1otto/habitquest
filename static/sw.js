@@ -1,6 +1,6 @@
 // habitquest service worker: offline shell + cache-first for static assets.
-const CACHE = "habitquest-v1";
-const SHELL = ["/", "/manifest.json", "/static/style.css", "/static/app.js", "/static/icons/icon-192.png"];
+const CACHE = "habitquest-v2";
+const SHELL = ["/", "/manifest.json", "/static/style.css", "/static/app.js", "/static/icons/icon-192.png", "/static/icons/favicon.svg"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

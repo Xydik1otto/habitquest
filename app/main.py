@@ -13,7 +13,7 @@ from . import db as db_mod
 from . import gamification as g
 from . import service
 
-app = FastAPI(title="habitquest", version="0.3.0")
+app = FastAPI(title="habitquest", version="0.4.0")
 
 DB_PATH = Path(__file__).resolve().parent.parent / "data" / "habitquest.db"
 ACHIEVEMENTS_PATH = g.ACHIEVEMENTS_FILE
