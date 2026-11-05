@@ -26,7 +26,7 @@ jobs:
           npx cap sync android
 
       - name: Assemble debug + unsigned release APKs
-        run: cd android && ./gradlew --no-daemon assembleDebug assembleRelease
+        run: chmod +x gradlew && ./gradlew --no-daemon assembleDebug assembleRelease
 
       - name: Upload debug APK artifact
         uses: actions/upload-artifact@v4
