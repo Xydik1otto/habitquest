@@ -12,6 +12,7 @@ from pathlib import Path
 BASE_XP = 10
 STREAK_CAP = 30  # multiplier caps at streak 30
 FREEZE_WEEKLY_LIMIT = 1
+CATEGORIES = ("health", "mind", "work", "home")
 BOSS_HP_PER_TARGET = 10   # boss HP = target × 10
 QUEST_BONUS_XP = 100      # one-time XP reward for slaying a monthly boss
 SHIELD_PRICE = 50         # shop price of one extra freeze token (streak shield)

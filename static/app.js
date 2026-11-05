@@ -12,6 +12,19 @@ function renderPlayer(player) {
   $("#xp-text").textContent = `${player.xp_in_level}/${player.xp_for_next} XP`;
 }
 
+// ---------- categories ----------
+const CAT_LABELS = { health: "💚 Здоров'я", mind: "🧠 Розум", work: "💼 Робота", home: "🏠 Дім" };
+let activeCategory = null;
+
+function renderCategoryFilter() {
+  const el = $("#cat-filter");
+  const cats = ["health", "mind", "work", "home"];
+  el.innerHTML = `<button class="cat ${activeCategory === null ? "active" : ""}" data-cat="">Усі</button>` +
+    cats.map((c) => `<button class="cat ${activeCategory === c ? "active" : ""}" data-cat="${c}">${CAT_LABELS[c]}</button>`).join("");
+  el.querySelectorAll("button.cat").forEach((b) =>
+    b.addEventListener("click", () => { activeCategory = b.dataset.cat || null; load(); }));
+}
+
 // ---------- day view ----------
 function renderDay(habits) {
   const list = $("#day-list");
@@ -23,7 +36,7 @@ function renderDay(habits) {
     const weeklyMeta = h.schedule === "weekly" ? ` · ${h.week_count}/${h.target_per_period} цього тижня` : "";
     row.innerHTML = `
       <span class="icon">${h.icon}</span>
-      <span class="name">${h.name}${weeklyMeta}</span>
+      <span class="name">${h.name} <span class="cat-chip" title="Категорія">${CAT_LABELS[h.category] || ""}</span>${weeklyMeta}</span>
       <span class="streak">${flame} ${h.streak}</span>
       <span class="meta">${h.done_today ? "✅ зроблено" : "очікується"}</span>`;
     const box = document.createElement("input");
@@ -144,6 +157,7 @@ $("#new-habit").addEventListener("submit", async (e) => {
       icon: $("#h-icon").value || "✅",
       schedule: $("#h-schedule").value,
       target_per_period: parseInt($("#h-target").value, 10) || 1,
+      category: $("#h-category").value,
     }),
   });
   $("#h-name").value = "";
@@ -162,8 +176,9 @@ $("#import-file").addEventListener("change", async (e) => {
 
 // ---------- load ----------
 async function load() {
-  const state = await api("/api/state");
+  const state = await api("/api/state" + (activeCategory ? `?category=${activeCategory}` : ""));
   renderPlayer(state.player);
+  renderCategoryFilter();
   renderDay(state.habits);
   renderQuests(state.quests || [], state.habits);
   const earned = new Set(state.habits.flatMap((h) => h.achievements));

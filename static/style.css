@@ -47,3 +47,9 @@ button.primary, #new-habit button { background:var(--gold); color:#222; border:n
 .shop-line { display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:.9rem; }
 #btn-buy-shield { background:var(--gold); color:#222; border:none; font-weight:600; }
 .badge { background:#3a2a10; border:1px solid var(--gold); color:var(--gold); }
+
+/* --- categories --- */
+.cat-filter { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
+button.cat { font-size:.8rem; padding:4px 10px; opacity:.6; }
+button.cat.active { opacity:1; border-color:var(--gold); color:var(--gold); }
+.cat-chip { font-size:.7rem; color:#888; }

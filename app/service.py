@@ -201,6 +201,7 @@ def habit_status(database: db.Database, habit, today: date | None = None) -> dic
         "name": habit["name"],
         "icon": habit["icon"],
         "schedule": habit["schedule"],
+        "category": habit["category"],
         "target_per_period": habit["target_per_period"],
         "streak": streak,
         "done_today": today.isoformat() in dates,
@@ -213,8 +214,8 @@ def habit_status(database: db.Database, habit, today: date | None = None) -> dic
     return status
 
 
-def full_state(database: db.Database, today: date | None = None) -> dict:
-    habits = [habit_status(database, h, today) for h in database.list_habits()]
+def full_state(database: db.Database, today: date | None = None, category: str | None = None) -> dict:
+    habits = [habit_status(database, h, today) for h in database.list_habits(category)]
     return {"player": player_state(database), "habits": habits,
             "quests": list_quests(database, today=today),
             "badges": [dict(b) for b in database.list_badges()]}

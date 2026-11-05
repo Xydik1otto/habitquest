@@ -82,11 +82,11 @@ class Database:
         self.conn.commit()
 
     # -- habits -------------------------------------------------------------
-    def add_habit(self, name: str, icon: str, schedule: str, target: int, created: str) -> int:
+    def add_habit(self, name: str, icon: str, schedule: str, target: int, created: str, category: str = "health") -> int:
         cur = self.conn.execute(
-            """INSERT INTO habits(id, name, icon, schedule, target_per_period, created_at)
-               VALUES ((SELECT COALESCE(MAX(id), 0) + 1 FROM habits), ?, ?, ?, ?, ?)""",
-            (name, icon, schedule, target, created),
+            """INSERT INTO habits(id, name, icon, schedule, target_per_period, created_at, category)
+               VALUES ((SELECT COALESCE(MAX(id), 0) + 1 FROM habits), ?, ?, ?, ?, ?, ?)""",
+            (name, icon, schedule, target, created, category),
         )
         self.conn.commit()
         return cur.lastrowid
@@ -98,8 +98,12 @@ class Database:
         self.conn.execute("DELETE FROM habits WHERE id=?", (habit_id,))
         self.conn.commit()
 
-    def list_habits(self) -> list[sqlite3.Row]:
-        return self.conn.execute("SELECT * FROM habits ORDER BY id").fetchall()
+    def list_habits(self, category: str | None = None) -> list[sqlite3.Row]:
+        if category is None:
+            return self.conn.execute("SELECT * FROM habits ORDER BY id").fetchall()
+        return self.conn.execute(
+            "SELECT * FROM habits WHERE category=? ORDER BY id", (category,)
+        ).fetchall()
 
     def get_habit(self, habit_id: int) -> sqlite3.Row | None:
         return self.conn.execute("SELECT * FROM habits WHERE id=?", (habit_id,)).fetchone()
@@ -292,8 +296,9 @@ class Database:
         self.conn.execute("DELETE FROM habits")
         for h in data.get("habits", []):
             self.conn.execute(
-                "INSERT INTO habits(id, name, icon, schedule, target_per_period, created_at) VALUES (?,?,?,?,?,?)",
-                (h["id"], h["name"], h.get("icon", "✅"), h.get("schedule", "daily"), h.get("target_per_period", 1), h["created_at"]),
+                "INSERT INTO habits(id, name, icon, schedule, target_per_period, created_at, category) VALUES (?,?,?,?,?,?,?)",
+                (h["id"], h["name"], h.get("icon", "✅"), h.get("schedule", "daily"),
+                 h.get("target_per_period", 1), h["created_at"], h.get("category", "health")),
             )
         for c in data.get("checkins", []):
             self.conn.execute("INSERT OR IGNORE INTO checkins(habit_id, date, note) VALUES (?,?,?)", (c["habit_id"], c["date"], c.get("note", "")))

@@ -22,10 +22,17 @@
 <main>
   <section class="panel">
     <h2>Сьогодні</h2>
+    <div id="cat-filter" class="cat-filter"></div>
     <div id="day-list"></div>
     <form id="new-habit">
       <input id="h-name" placeholder="Нова звичка…" required maxlength="80">
       <input id="h-icon" value="✅" maxlength="4" title="Емодзі-іконка">
+      <select id="h-category" title="Категорія">
+        <option value="health">💚 Здоров'я</option>
+        <option value="mind">🧠 Розум</option>
+        <option value="work">💼 Робота</option>
+        <option value="home">🏠 Дім</option>
+      </select>
       <select id="h-schedule">
         <option value="daily">Щодня</option>
         <option value="weekly">Щотижня</option>

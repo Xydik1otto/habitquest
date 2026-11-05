@@ -32,6 +32,7 @@ class HabitIn(BaseModel):
     icon: str = Field(default="✅", max_length=8)
     schedule: str = Field(default="daily", pattern="^(daily|weekly)$")
     target_per_period: int = Field(default=1, ge=1, le=7)
+    category: str = Field(default="health", pattern="^(health|mind|work|home)$")
 
 
 class CheckIn(BaseModel):
@@ -57,13 +58,17 @@ class BuyIn(BaseModel):
 
 
 @app.get("/api/state")
-def state() -> dict:
-    return service.full_state(get_db())
+def state(category: str | None = None) -> dict:
+    if category is not None and category not in g.CATEGORIES:
+        raise HTTPException(400, f"unknown category {category!r}; expected one of {g.CATEGORIES}")
+    return service.full_state(get_db(), category=category)
 
 
 @app.post("/api/habits")
 def create_habit(payload: HabitIn) -> dict:
-    hid = get_db().add_habit(payload.name, payload.icon, payload.schedule, payload.target_per_period, date.today().isoformat())
+    hid = get_db().add_habit(payload.name, payload.icon, payload.schedule,
+                             payload.target_per_period, date.today().isoformat(),
+                             payload.category)
     return {"id": hid}
 
 
