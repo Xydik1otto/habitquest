@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>HabitQuest — адреса сервера</title>
+  <style>
+    :root { color-scheme: dark light; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(160deg, #101426 0%, #1c2340 100%); color: #e8eaf6;
+      padding: 24px;
+    }
+    .card {
+      width: 100%; max-width: 420px; background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12); border-radius: 16px; padding: 28px;
+    }
+    h1 { margin: 0 0 4px; font-size: 1.5rem; }
+    .sub { margin: 0 0 20px; opacity: .75; font-size: .9rem; line-height: 1.4; }
+    label { display: block; font-size: .85rem; margin-bottom: 6px; opacity: .85; }
+    input {
+      width: 100%; padding: 12px 14px; font-size: 1rem; border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.25); background: rgba(0,0,0,.3); color: inherit;
+    }
+    input:focus-visible { outline: 2px solid #7c8cff; outline-offset: 1px; }
+    button {
+      width: 100%; margin-top: 14px; padding: 13px; font-size: 1rem; font-weight: 600;
+      border: 0; border-radius: 10px; background: #5c6cff; color: #fff; cursor: pointer;
+    }
+    button:focus-visible { outline: 2px solid #aab4ff; outline-offset: 2px; }
+    .hint { margin: 14px 0 0; font-size: .8rem; opacity: .6; line-height: 1.5; }
+    .err { color: #ff8a80; font-size: .85rem; margin-top: 10px; min-height: 1.2em; }
+    .status { margin-top: 16px; font-size: .85rem; opacity: .7; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>HabitQuest</h1>
+    <p class="sub" id="sub">Вкажіть адресу вашого сервера HabitQuest, щоб підключитися.</p>
+    <form id="form" novalidate>
+      <label for="serverUrl" id="label">Адреса сервера (наприклад, http://192.168.1.10:8000)</label>
+      <input id="serverUrl" name="serverUrl" type="url" inputmode="url" autocomplete="off"
+             spellcheck="false" placeholder="http://192.168.1.10:8000" aria-describedby="err">
+      <button type="submit" id="go">Підключитися</button>
+    </form>
+    <p class="err" id="err" role="alert"></p>
+    <p class="hint" id="hint">
+      Сервер має бути доступним з цього пристрою: у локальній мережі напряму
+      або через Tailscale / WireGuard (безкоштовно). Дані зберігаються лише на вашому сервері.
+    </p>
+    <p class="status" id="status" aria-live="polite"></p>
+  </main>
+  <script type="module">
+    const KEY = 'habitquest.serverUrl';
+    const $ = (id) => document.getElementById(id);
+
+    async function load() {
+      try {
+        const { Preferences } = await import('@capacitor/preferences');
+        const r = await Preferences.get({ key: KEY });
+        if (r.value) return r.value;
+      } catch (e) { /* fall through to localStorage */ }
+      return localStorage.getItem(KEY) || '';
+    }
+
+    async function save(url) {
+      try {
+        const { Preferences } = await import('@capacitor/preferences');
+        await Preferences.set({ key: KEY, value: url });
+      } catch (e) { /* fall through to localStorage */ }
+      localStorage.setItem(KEY, url);
+    }
+
+    function normalize(raw) {
+      let url = raw.trim();
+      if (!url) throw new Error('empty');
+      if (!/^https?:\/\//i.test(url)) url = 'http://' + url;
+      const u = new URL(url);
+      if (u.protocol !== 'http:' && u.protocol !== 'https:') throw new Error('scheme');
+      return u.origin + (u.pathname === '/' ? '' : u.pathname);
+    }
+
+    function navType() {
+      const nav = performance.getEntriesByType('navigation')[0];
+      return nav ? nav.type : 'navigate';
+    }
+
+    const saved = await load();
+    if (saved && navType() !== 'back_forward') {
+      $('status').textContent = 'Підключення до ' + saved + ' …';
+      window.location.replace(saved);
+    } else if (saved) {
+      $('serverUrl').value = saved;
+    }
+
+    $('form').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      $('err').textContent = '';
+      try {
+        const url = normalize($('serverUrl').value);
+        await save(url);
+        $('status').textContent = 'Підключення до ' + url + ' …';
+        window.location.replace(url);
+      } catch (e) {
+        $('err').textContent = e.message === 'empty'
+          ? 'Введіть адресу сервера.'
+          : 'Некоректна адреса. Потрібен http:// або https:// URL.';
+      }
+    });
+  </script>
+</body>
+</html>

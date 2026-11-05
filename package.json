@@ -1,0 +1,31 @@
+{
+  "name": "habitquest",
+  "version": "1.0.0",
+  "description": "![tests](https://img.shields.io/badge/tests-179%20passing-brightgreen) ![python](https://img.shields.io/badge/python-3.12%2B-blue) ![license](https://img.shields.io/badge/license-MIT-gold) ![status](https://img.shields.io/badge/version-1.0.0-orange)",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Xydik1otto/habitquest.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Xydik1otto/habitquest/issues"
+  },
+  "homepage": "https://github.com/Xydik1otto/habitquest#readme",
+  "dependencies": {
+    "@capacitor/android": "^6.2.3",
+    "@capacitor/cli": "^6.2.3",
+    "@capacitor/core": "^6.2.3",
+    "@capacitor/ios": "^6.2.3",
+    "@capacitor/preferences": "^6.0.4"
+  }
+}
