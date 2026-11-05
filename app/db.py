@@ -1,6 +1,8 @@
 """SQLite storage layer (stdlib sqlite3, no ORM)."""
 from __future__ import annotations
 
+import csv
+import io
 import json
 import sqlite3
 from datetime import date, timedelta
@@ -429,6 +431,22 @@ class Database:
             self.conn.execute("INSERT OR IGNORE INTO badges(id, label, earned_at) VALUES (?,?,?)",
                               (b["id"], b["label"], b["earned_at"]))
         self.conn.commit()
+
+
+    def export_csv(self) -> dict:
+        """CSV exports: habits.csv and checkins.csv (spreadsheet-friendly)."""
+        habits_buf = io.StringIO()
+        w = csv.writer(habits_buf)
+        w.writerow(["id", "name", "icon", "schedule", "target_per_period", "category", "created_at"])
+        for h in self.list_habits():
+            w.writerow([h["id"], h["name"], h["icon"], h["schedule"],
+                        h["target_per_period"], h["category"], h["created_at"]])
+        checkins_buf = io.StringIO()
+        w = csv.writer(checkins_buf)
+        w.writerow(["habit_id", "date", "note"])
+        for c in self.conn.execute("SELECT habit_id, date, note FROM checkins ORDER BY date"):
+            w.writerow([c["habit_id"], c["date"], c["note"]])
+        return {"habits": habits_buf.getvalue(), "checkins": checkins_buf.getvalue()}
 
 
 def load_export_file(path: Path) -> dict:

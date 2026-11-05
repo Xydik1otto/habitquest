@@ -183,7 +183,13 @@ function renderDay(habits) {
     }
     const del = document.createElement("button");
     del.textContent = "✕";
-    del.addEventListener("click", async () => { await api(`/api/habits/${h.id}`, { method: "DELETE" }); load(); });
+    del.title = "Видалити звичку разом з усіма чек-інами. Дію не можна відмінити — спершу зробіть Export JSON!";
+    del.setAttribute("aria-label", `Видалити звичку ${h.name}`);
+    del.addEventListener("click", async () => {
+      if (!confirm(`Видалити «${h.name}» разом з усіма чек-інами (${h.streak} дн. серії)? Дію не можна відмінити.`)) return;
+      await api(`/api/habits/${h.id}`, { method: "DELETE" });
+      load();
+    });
     row.append(del);
     const chartBtn = document.createElement("button");
     chartBtn.textContent = "📈";
@@ -461,6 +467,12 @@ $("#new-habit").addEventListener("submit", async (e) => {
 
 // ---------- export / import ----------
 $("#btn-export").addEventListener("click", () => { location.href = "/api/export"; });
+$("#btn-export-csv").addEventListener("click", () => {
+  const a = document.createElement("a");
+  a.href = "/api/export/csv?kind=habits"; a.download = "habitquest_habits.csv"; a.click();
+  const b = document.createElement("a");
+  b.href = "/api/export/csv?kind=checkins"; b.download = "habitquest_checkins.csv"; b.click();
+});
 $("#import-file").addEventListener("change", async (e) => {
   const file = e.target.files[0];
   if (!file) return;

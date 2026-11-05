@@ -284,6 +284,14 @@ def export() -> dict:
     return get_db().export()
 
 
+@app.get("/api/export/csv")
+def export_csv(kind: str = "habits") -> dict:
+    """CSV export (spreadsheet-friendly): kind=habits|checkins."""
+    if kind not in ("habits", "checkins"):
+        raise HTTPException(400, f"unknown csv kind {kind!r}; expected 'habits' or 'checkins'")
+    return get_db().export_csv()
+
+
 @app.post("/api/import")
 def import_data(data: dict) -> dict:
     get_db().import_data(data)
