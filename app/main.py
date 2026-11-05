@@ -45,6 +45,12 @@ class FreezeIn(BaseModel):
     date: str | None = None
 
 
+class QuestIn(BaseModel):
+    habit_id: int
+    target: int = Field(ge=1, le=31)
+    month: str | None = Field(default=None, pattern=r"^\d{4}-\d{2}$")
+
+
 @app.get("/api/state")
 def state() -> dict:
     return service.full_state(get_db())
@@ -75,7 +81,23 @@ def undo_checkin(habit_id: int, day: str) -> dict:
     ok = get_db().remove_checkin(habit_id, day)
     if not ok:
         raise HTTPException(404, "no such check-in")
+    service._sync_quests_for(get_db(), habit_id, day)
     return {"removed": True, "player_xp": get_db().xp()}
+
+
+@app.post("/api/quests")
+def create_quest(payload: QuestIn) -> dict:
+    try:
+        return service.create_quest(get_db(), payload.habit_id, payload.target, payload.month)
+    except ValueError as e:
+        msg = str(e)
+        code = 404 if "unknown habit" in msg else 400
+        raise HTTPException(code, msg)
+
+
+@app.get("/api/quests")
+def list_quests(month: str | None = None) -> dict:
+    return {"quests": service.list_quests(get_db(), month)}
 
 
 @app.post("/api/freeze")
@@ -110,7 +132,7 @@ def import_data(data: dict) -> dict:
 
 @app.get("/api/achievements")
 def achievements() -> dict:
-    return {"all": g.ACHIEVEMENTS}
+    return {"all": g.load_achievement_defs()}
 
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
@@ -119,6 +141,16 @@ STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 @app.get("/")
 def index() -> FileResponse:
     return FileResponse(STATIC_DIR / "index.html")
+
+
+@app.get("/manifest.json", include_in_schema=False)
+def manifest() -> FileResponse:
+    return FileResponse(STATIC_DIR / "manifest.json", media_type="application/manifest+json")
+
+
+@app.get("/sw.js", include_in_schema=False)
+def service_worker() -> FileResponse:
+    return FileResponse(STATIC_DIR / "sw.js", media_type="text/javascript")
 
 
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")

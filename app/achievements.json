@@ -1,0 +1,40 @@
+{
+  "_comment": "Визначення досягнень habitquest. Шаблон для Pro Pack: додайте об'єкти з полями id, name, description, metric (streak | total_checkins | gap_days), threshold.",
+  "achievements": [
+    {
+      "id": "first_checkin",
+      "name": "Перший крок",
+      "description": "Перший чек-ін",
+      "metric": "total_checkins",
+      "threshold": 1
+    },
+    {
+      "id": "first_week",
+      "name": "Перший тиждень",
+      "description": "Серія 7 днів",
+      "metric": "streak",
+      "threshold": 7
+    },
+    {
+      "id": "thirty_days",
+      "name": "Місяць дисципліни",
+      "description": "Серія 30 днів",
+      "metric": "streak",
+      "threshold": 30
+    },
+    {
+      "id": "comeback",
+      "name": "Повернення",
+      "description": "Чек-ін після паузи ≥3 днів",
+      "metric": "gap_days",
+      "threshold": 3
+    },
+    {
+      "id": "centurion",
+      "name": "Центуріон",
+      "description": "100 чек-інів загалом (шаблон Pro Pack)",
+      "metric": "total_checkins",
+      "threshold": 100
+    }
+  ]
+}

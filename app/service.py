@@ -10,6 +10,76 @@ def today_iso(today: date | None = None) -> str:
     return (today or date.today()).isoformat()
 
 
+# --- monthly quests / boss battles -------------------------------------------
+def create_quest(
+    database: db.Database,
+    habit_id: int,
+    target: int,
+    month: str | None = None,
+    today: date | None = None,
+) -> dict:
+    """Create (or return the existing) monthly quest for a habit."""
+    habit = database.get_habit(habit_id)
+    if habit is None:
+        raise ValueError(f"unknown habit {habit_id}")
+    month = month or g.month_key(today or date.today())
+    try:
+        if date.fromisoformat(month + "-01").strftime("%Y-%m") != month:
+            raise ValueError
+    except ValueError as e:
+        raise ValueError(f"invalid month {month!r}; expected 'YYYY-MM'") from e
+    if not isinstance(target, int) or isinstance(target, bool) or not 1 <= target <= 31:
+        raise ValueError("target must be between 1 and 31")
+    if database.find_quest(month, habit_id) is not None:
+        raise ValueError(f"quest for {month} / habit {habit_id} already exists")
+    qid = database.add_quest(month, habit_id, target)
+    _sync_quest(database, database.get_quest(qid))
+    return quest_status(database, database.get_quest(qid))
+
+
+def _sync_quest(database: db.Database, quest) -> None:
+    """Recompute quest progress/damage from the check-ins of its month.
+
+    Grants the one-time boss bonus XP when the boss goes down.
+    """
+    dates = database.checkins_in_month(quest["habit_id"], quest["month"])
+    progress = len(dates)
+    damage = progress * g.BOSS_HP_PER_TARGET  # alpha: flat damage per hit
+    hp = g.boss_hp(quest["target"])
+    completed = damage >= hp
+    rewarded = bool(quest["rewarded"])
+    if completed and not quest["completed"] and not rewarded:
+        database.add_xp(g.QUEST_BONUS_XP)
+        rewarded = True
+    database.update_quest(quest["id"], progress, damage, completed, rewarded)
+
+
+def quest_status(database: db.Database, quest, habit=None) -> dict:
+    habit = habit or database.get_habit(quest["habit_id"])
+    hp = g.boss_hp(quest["target"])
+    return {
+        "id": quest["id"],
+        "month": quest["month"],
+        "habit_id": quest["habit_id"],
+        "habit_name": habit["name"] if habit else "?",
+        "habit_icon": habit["icon"] if habit else "✅",
+        "target": quest["target"],
+        "progress": quest["progress"],
+        "hp": hp,
+        "damage": quest["damage"],
+        "completed": bool(quest["completed"]),
+        "reward": g.QUEST_BONUS_XP,
+    }
+
+
+def list_quests(database: db.Database, month: str | None = None, today: date | None = None) -> list[dict]:
+    month = month or g.month_key(today or date.today())
+    out = []
+    for q in database.list_quests(month):
+        out.append(quest_status(database, q))
+    return out
+
+
 def checkin(database: db.Database, habit_id: int, day: str | None = None, note: str = "", today: date | None = None) -> dict:
     """Record a check-in, award streak-multiplied XP, return the new state."""
     habit = database.get_habit(habit_id)
@@ -24,6 +94,7 @@ def checkin(database: db.Database, habit_id: int, day: str | None = None, note: 
     if created:
         xp_gained = g.xp_for_checkin(streak)
         database.add_xp(xp_gained)
+        _sync_quests_for(database, habit_id, day)
     return {
         "habit_id": habit_id,
         "date": day,
@@ -32,6 +103,13 @@ def checkin(database: db.Database, habit_id: int, day: str | None = None, note: 
         "streak": _habit_streak(database, habit, today=today or date.today()),
         "player_xp": database.xp(),
     }
+
+
+def _sync_quests_for(database: db.Database, habit_id: int, day: str) -> None:
+    """Recompute the quest of this habit whose month matches the check-in."""
+    quest = database.find_quest(day[:7], habit_id)
+    if quest is not None:
+        _sync_quest(database, quest)
 
 
 def _habit_streak(database: db.Database, habit, today: date | None = None) -> int:
@@ -71,7 +149,8 @@ def habit_status(database: db.Database, habit, today: date | None = None) -> dic
         "target_per_period": habit["target_per_period"],
         "streak": streak,
         "done_today": today.isoformat() in dates,
-        "achievements": g.evaluate_achievements(streak, len(dates), g.last_gap_days(dates, today)),
+        "achievements": g.evaluate_achievements(streak, len(dates), g.last_gap_days(dates, today))
+        + g.evaluate_custom_achievements(g.load_achievement_defs(), streak, len(dates), g.last_gap_days(dates, today)),
     }
     if habit["schedule"] == "weekly":
         week_dates = g.iso_dates_of_week(*today.isocalendar()[:2])
@@ -81,7 +160,8 @@ def habit_status(database: db.Database, habit, today: date | None = None) -> dic
 
 def full_state(database: db.Database, today: date | None = None) -> dict:
     habits = [habit_status(database, h, today) for h in database.list_habits()]
-    return {"player": player_state(database), "habits": habits}
+    return {"player": player_state(database), "habits": habits,
+            "quests": list_quests(database, today=today)}
 
 
 def stats(database: db.Database, today: date | None = None) -> dict:

@@ -3,7 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#12121a">
 <title>habitquest</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/static/icons/icon-192.png">
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
@@ -29,6 +32,16 @@
       </select>
       <input id="h-target" type="number" min="1" max="7" value="1" title="Ціль за період">
       <button type="submit">Додати</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h2>🗡 Бос-бій цього місяця</h2>
+    <div id="quest-list"></div>
+    <form id="new-quest">
+      <select id="q-habit" required></select>
+      <input id="q-target" type="number" min="1" max="31" value="12" title="Скільки разів за місяць">
+      <button type="submit">⚔ Викликати боса</button>
     </form>
   </section>
 

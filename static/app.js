@@ -57,6 +57,40 @@ function renderDay(habits) {
   }
 }
 
+// ---------- boss battle (monthly quests) ----------
+function renderQuests(quests, habits) {
+  const list = $("#quest-list");
+  list.innerHTML = "";
+  const select = $("#q-habit");
+  select.innerHTML = habits.map((h) => `<option value="${h.id}">${h.icon} ${h.name}</option>`).join("");
+  for (const q of quests) {
+    const hpPct = Math.max(0, 100 - Math.round(100 * q.damage / q.hp));
+    const row = document.createElement("div");
+    row.className = "boss" + (q.completed ? " boss-down" : "");
+    row.innerHTML = `
+      <div class="boss-head">
+        <span class="boss-face">${q.completed ? "💀" : "👹"}</span>
+        <span class="name">${q.habit_icon} ${q.habit_name}</span>
+        <span class="boss-hp-text">${q.completed ? "ПЕРЕМОЖЕНО!" : `HP ${Math.max(0, q.hp - q.damage)}/${q.hp}`}</span>
+      </div>
+      <div class="boss-hp"><div class="boss-hp-fill" style="width:${hpPct}%"></div></div>
+      <div class="boss-meta">${q.progress}/${q.target} ударів · нагорода ${q.reward} XP</div>`;
+    list.appendChild(row);
+  }
+}
+
+// ---------- new quest ----------
+$("#new-quest").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const habitId = parseInt($("#q-habit").value, 10);
+  const target = parseInt($("#q-target").value, 10) || 12;
+  try {
+    await api("/api/quests", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ habit_id: habitId, target }) });
+    load();
+  } catch (err) { alert(err.message); }
+});
+
 // ---------- week heatmap (SVG) ----------
 function renderHeatmap(grid) {
   const cell = 18, gap = 3, labelW = 46;
@@ -78,22 +112,14 @@ function renderHeatmap(grid) {
   $("#week-heatmap").innerHTML = svg;
 }
 
-// ---------- stats & achievements ----------
-const ACHV_LABELS = {
-  first_checkin: "🥇 Перший крок",
-  first_week: "📅 Перший тиждень",
-  thirty_days: "🏆 Місяць дисципліни",
-  comeback: "🔄 Повернення",
-};
-
-function renderStats(stats, earnedIds) {
+// ---------- stats & achievements (definitions come from JSON) ----------
+function renderStats(stats, earnedIds, defs) {
   $("#stats").innerHTML = `
     <div>🔥 Найдовша серія: <b>${stats.longest_streak}</b> дн.</div>
     <div>📈 Виконання за 30 днів: <b>${Math.round(stats.completion_rate_30d * 100)}%</b></div>
     <div>🧾 Усього чек-інів: <b>${stats.total_checkins}</b></div>`;
-  const all = ["first_checkin", "first_week", "thirty_days", "comeback"];
-  $("#achievements").innerHTML = all.map((id) =>
-    `<span class="achv ${earnedIds.has(id) ? "" : "locked"}">${ACHV_LABELS[id]}</span>`).join("");
+  $("#achievements").innerHTML = defs.map((d) =>
+    `<span class="achv ${earnedIds.has(d.id) ? "" : "locked"}" title="${d.description}">${d.name}</span>`).join("");
 }
 
 // ---------- new habit ----------
@@ -128,9 +154,15 @@ async function load() {
   const state = await api("/api/state");
   renderPlayer(state.player);
   renderDay(state.habits);
+  renderQuests(state.quests || [], state.habits);
   const earned = new Set(state.habits.flatMap((h) => h.achievements));
   renderHeatmap(await api("/api/heatmap?weeks=12"));
-  renderStats(await api("/api/stats"), earned);
+  renderStats(await api("/api/stats"), earned, (await api("/api/achievements")).all);
+}
+
+// ---------- PWA ----------
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js").catch(() => {}); // offline shell
 }
 
 load();

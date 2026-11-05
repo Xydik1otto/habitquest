@@ -32,7 +32,32 @@ CREATE TABLE IF NOT EXISTS player (
     xp INTEGER NOT NULL DEFAULT 0
 );
 INSERT OR IGNORE INTO player (id, xp) VALUES (1, 0);
+CREATE TABLE IF NOT EXISTS quests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    month TEXT NOT NULL,                -- 'YYYY-MM'
+    habit_id INTEGER NOT NULL REFERENCES habits(id) ON DELETE CASCADE,
+    target INTEGER NOT NULL,
+    progress INTEGER NOT NULL DEFAULT 0,  -- check-ins of the habit this month
+    damage INTEGER NOT NULL DEFAULT 0,    -- boss damage dealt so far
+    completed INTEGER NOT NULL DEFAULT 0,
+    rewarded INTEGER NOT NULL DEFAULT 0,  -- bonus XP already granted
+    UNIQUE (month, habit_id)
+);
 """
+
+# Columns added after the initial MVP schema; applied to existing databases.
+_MIGRATIONS = [
+    ("player", "coins", "ALTER TABLE player ADD COLUMN coins INTEGER NOT NULL DEFAULT 0"),
+    ("player", "shields", "ALTER TABLE player ADD COLUMN shields INTEGER NOT NULL DEFAULT 0"),
+    ("habits", "category", "ALTER TABLE habits ADD COLUMN category TEXT NOT NULL DEFAULT 'health'"),
+]
+
+
+def _migrate(conn: sqlite3.Connection) -> None:
+    for table, column, stmt in _MIGRATIONS:
+        cols = {r[1] for r in conn.execute(f"PRAGMA table_info({table})")}
+        if column not in cols:
+            conn.execute(stmt)
 
 
 class Database:
@@ -41,6 +66,7 @@ class Database:
         self.conn.row_factory = sqlite3.Row
         self.conn.execute("PRAGMA foreign_keys = ON")
         self.conn.executescript(SCHEMA)
+        _migrate(self.conn)
         self.conn.commit()
 
     # -- habits -------------------------------------------------------------
@@ -56,6 +82,7 @@ class Database:
     def delete_habit(self, habit_id: int) -> None:
         self.conn.execute("DELETE FROM checkins WHERE habit_id=?", (habit_id,))
         self.conn.execute("DELETE FROM freezes WHERE habit_id=?", (habit_id,))
+        self.conn.execute("DELETE FROM quests WHERE habit_id=?", (habit_id,))
         self.conn.execute("DELETE FROM habits WHERE id=?", (habit_id,))
         self.conn.commit()
 
@@ -113,6 +140,50 @@ class Database:
                 count += 1
         return count
 
+    # -- quests ---------------------------------------------------------------
+    def add_quest(self, month: str, habit_id: int, target: int) -> int:
+        cur = self.conn.execute(
+            "INSERT INTO quests(month, habit_id, target) VALUES (?,?,?)",
+            (month, habit_id, target),
+        )
+        self.conn.commit()
+        return cur.lastrowid
+
+    def list_quests(self, month: str | None = None) -> list[sqlite3.Row]:
+        if month is None:
+            return self.conn.execute("SELECT * FROM quests ORDER BY month, id").fetchall()
+        return self.conn.execute(
+            "SELECT * FROM quests WHERE month=? ORDER BY id", (month,)
+        ).fetchall()
+
+    def get_quest(self, quest_id: int) -> sqlite3.Row | None:
+        return self.conn.execute("SELECT * FROM quests WHERE id=?", (quest_id,)).fetchone()
+
+    def find_quest(self, month: str, habit_id: int) -> sqlite3.Row | None:
+        return self.conn.execute(
+            "SELECT * FROM quests WHERE month=? AND habit_id=?", (month, habit_id)
+        ).fetchone()
+
+    def update_quest(self, quest_id: int, progress: int, damage: int, completed: bool, rewarded: bool) -> None:
+        self.conn.execute(
+            "UPDATE quests SET progress=?, damage=?, completed=?, rewarded=? WHERE id=?",
+            (progress, damage, int(completed), int(rewarded), quest_id),
+        )
+        self.conn.commit()
+
+    def checkins_in_month(self, habit_id: int | None, month: str) -> list[str]:
+        """ISO dates of check-ins (optionally of one habit) inside 'YYYY-MM'."""
+        if habit_id is None:
+            rows = self.conn.execute(
+                "SELECT date FROM checkins WHERE substr(date, 1, 7)=?", (month,)
+            ).fetchall()
+        else:
+            rows = self.conn.execute(
+                "SELECT date FROM checkins WHERE habit_id=? AND substr(date, 1, 7)=?",
+                (habit_id, month),
+            ).fetchall()
+        return [r["date"] for r in rows]
+
     # -- player -------------------------------------------------------------
     def add_xp(self, amount: int) -> int:
         self.conn.execute("UPDATE player SET xp = xp + ? WHERE id = 1", (amount,))
@@ -127,11 +198,19 @@ class Database:
         habits = [dict(r) for r in self.list_habits()]
         checkins = [dict(r) for r in self.conn.execute("SELECT habit_id, date, note FROM checkins")]
         freezes = [dict(r) for r in self.conn.execute("SELECT habit_id, date FROM freezes")]
-        return {"version": 1, "player": {"xp": self.xp()}, "habits": habits, "checkins": checkins, "freezes": freezes}
+        quests = [
+            {"month": q["month"], "habit_id": q["habit_id"], "target": q["target"],
+             "progress": q["progress"], "damage": q["damage"],
+             "completed": bool(q["completed"]), "rewarded": bool(q["rewarded"])}
+            for q in self.list_quests()
+        ]
+        return {"version": 1, "player": {"xp": self.xp()}, "habits": habits,
+                "checkins": checkins, "freezes": freezes, "quests": quests}
 
     def import_data(self, data: dict) -> None:
         self.conn.execute("DELETE FROM checkins")
         self.conn.execute("DELETE FROM freezes")
+        self.conn.execute("DELETE FROM quests")
         self.conn.execute("DELETE FROM habits")
         for h in data.get("habits", []):
             self.conn.execute(
@@ -142,6 +221,12 @@ class Database:
             self.conn.execute("INSERT OR IGNORE INTO checkins(habit_id, date, note) VALUES (?,?,?)", (c["habit_id"], c["date"], c.get("note", "")))
         for f in data.get("freezes", []):
             self.conn.execute("INSERT OR IGNORE INTO freezes(habit_id, date) VALUES (?,?)", (f["habit_id"], f["date"]))
+        for q in data.get("quests", []):
+            self.conn.execute(
+                "INSERT INTO quests(month, habit_id, target, progress, damage, completed, rewarded) VALUES (?,?,?,?,?,?,?)",
+                (q["month"], q["habit_id"], q["target"], q.get("progress", 0), q.get("damage", 0),
+                 int(q.get("completed", False)), int(q.get("rewarded", False))),
+            )
         self.conn.execute("UPDATE player SET xp=? WHERE id=1", (data.get("player", {}).get("xp", 0),))
         self.conn.commit()
 

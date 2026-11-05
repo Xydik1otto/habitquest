@@ -28,3 +28,18 @@ button.primary, #new-habit button { background:var(--gold); color:#222; border:n
 .portability { margin-top:12px; display:flex; gap:8px; align-items:center; }
 .achv { display:inline-block; background:#26263a; border-radius:8px; padding:4px 10px; margin:4px 4px 0 0; font-size:.8rem; }
 .achv.locked { opacity:.35; }
+
+/* --- boss battle --- */
+.boss { padding:10px 0; border-bottom:1px solid #26263a; }
+.boss:last-child { border-bottom:none; }
+.boss-head { display:flex; align-items:center; gap:10px; }
+.boss-face { font-size:1.6rem; }
+.boss-down .boss-face { filter:grayscale(1); }
+.boss-head .name { flex:1; }
+.boss-hp-text { font-size:.8rem; color:var(--fire); font-weight:600; }
+.boss-down .boss-hp-text { color:var(--ok); }
+.boss-hp { height:12px; background:#2a2a3a; border-radius:6px; overflow:hidden; margin-top:6px; }
+.boss-hp-fill { height:100%; background:linear-gradient(90deg,#e5484d,#ff7043); transition:width .3s; }
+.boss-meta { font-size:.75rem; color:#888; margin-top:4px; }
+#new-quest { display:flex; gap:8px; margin-top:12px; }
+#new-quest input[type=number] { width:80px; }

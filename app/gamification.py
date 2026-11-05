@@ -5,11 +5,27 @@ without HTTP or the database.
 """
 from __future__ import annotations
 
+import json
 from datetime import date, timedelta
+from pathlib import Path
 
 BASE_XP = 10
 STREAK_CAP = 30  # multiplier caps at streak 30
 FREEZE_WEEKLY_LIMIT = 1
+BOSS_HP_PER_TARGET = 10   # boss HP = target × 10
+QUEST_BONUS_XP = 100      # one-time XP reward for slaying a monthly boss
+
+ACHIEVEMENTS_FILE = Path(__file__).resolve().parent / "achievements.json"
+
+
+def month_key(d: date) -> str:
+    """'YYYY-MM' key of a date."""
+    return f"{d.year:04d}-{d.month:02d}"
+
+
+def boss_hp(target: int) -> int:
+    """A monthly boss has HP proportional to the quest target."""
+    return max(target, 1) * BOSS_HP_PER_TARGET
 
 
 # --- XP & levels -----------------------------------------------------------
@@ -128,6 +144,59 @@ def last_gap_days(checkin_dates: set[str], today: date | None = None) -> int | N
         if len(ds) < 2:
             return None
     return (ds[-1] - ds[-2]).days
+
+
+# --- achievement definitions (JSON, Pro-Pack templates) -----------------------
+# Schema per definition:
+#   {"id": str, "name": str, "description": str,
+#    "metric": "streak" | "total_checkins" | "gap_days",
+#    "threshold": int}
+# A definition is earned when metric >= threshold (gap_days: comeback-style).
+_VALID_METRICS = ("streak", "total_checkins", "gap_days")
+
+
+def validate_achievement_def(d: dict) -> None:
+    """Raise ValueError if an achievement definition is malformed."""
+    if not isinstance(d, dict):
+        raise ValueError("achievement definition must be an object")
+    for key in ("id", "name", "description", "metric", "threshold"):
+        if key not in d:
+            raise ValueError(f"achievement definition missing '{key}'")
+    if not isinstance(d["id"], str) or not d["id"]:
+        raise ValueError("achievement 'id' must be a non-empty string")
+    if d["metric"] not in _VALID_METRICS:
+        raise ValueError(f"unknown metric {d['metric']!r}; expected one of {_VALID_METRICS}")
+    if not isinstance(d["threshold"], int) or isinstance(d["threshold"], bool) or d["threshold"] < 1:
+        raise ValueError("achievement 'threshold' must be a positive integer")
+
+
+def load_achievement_defs(path: Path | None = None) -> list[dict]:
+    """Load achievement definitions from JSON (built-ins by default)."""
+    path = path or ACHIEVEMENTS_FILE
+    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    defs = data.get("achievements", data) if isinstance(data, dict) else data
+    if not isinstance(defs, list):
+        raise ValueError("achievements JSON must contain a list")
+    for d in defs:
+        validate_achievement_def(d)
+    return defs
+
+
+def evaluate_custom_achievements(
+    defs: list[dict],
+    streak: int,
+    total_checkins: int,
+    last_gap_days: int | None,
+) -> list[str]:
+    """Return ids of JSON-defined achievements earned for the given stats."""
+    metrics = {"streak": streak, "total_checkins": total_checkins,
+               "gap_days": last_gap_days if last_gap_days is not None else 0}
+    earned = []
+    for d in defs:
+        validate_achievement_def(d)
+        if metrics[d["metric"]] >= d["threshold"]:
+            earned.append(d["id"])
+    return earned
 
 
 # --- heat map -----------------------------------------------------------------
