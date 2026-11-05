@@ -43,6 +43,15 @@ CREATE TABLE IF NOT EXISTS quests (
     rewarded INTEGER NOT NULL DEFAULT 0,  -- bonus XP already granted
     UNIQUE (month, habit_id)
 );
+CREATE TABLE IF NOT EXISTS weekly_quests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    week TEXT NOT NULL,                 -- ISO week key, e.g. '2026-W02'
+    habit_ids TEXT NOT NULL,            -- JSON array of habit ids (3 by default)
+    target INTEGER NOT NULL,            -- check-ins per habit per week
+    completed INTEGER NOT NULL DEFAULT 0,
+    rewarded INTEGER NOT NULL DEFAULT 0,  -- coin reward already granted
+    UNIQUE (week)
+);
 CREATE TABLE IF NOT EXISTS xp_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     date TEXT NOT NULL,
@@ -200,6 +209,32 @@ class Database:
             ).fetchall()
         return [r["date"] for r in rows]
 
+    # -- weekly quests ---------------------------------------------------------
+    def add_weekly_quest(self, week: str, habit_ids: list[int], target: int) -> int:
+        cur = self.conn.execute(
+            "INSERT INTO weekly_quests(week, habit_ids, target) VALUES (?,?,?)",
+            (week, json.dumps(habit_ids), target),
+        )
+        self.conn.commit()
+        return cur.lastrowid
+
+    def list_weekly_quests(self, week: str | None = None) -> list[sqlite3.Row]:
+        if week is None:
+            return self.conn.execute("SELECT * FROM weekly_quests ORDER BY week, id").fetchall()
+        return self.conn.execute(
+            "SELECT * FROM weekly_quests WHERE week=?", (week,)
+        ).fetchall()
+
+    def get_weekly_quest(self, quest_id: int) -> sqlite3.Row | None:
+        return self.conn.execute("SELECT * FROM weekly_quests WHERE id=?", (quest_id,)).fetchone()
+
+    def update_weekly_quest(self, quest_id: int, completed: bool, rewarded: bool) -> None:
+        self.conn.execute(
+            "UPDATE weekly_quests SET completed=?, rewarded=? WHERE id=?",
+            (int(completed), int(rewarded), quest_id),
+        )
+        self.conn.commit()
+
     # -- player -------------------------------------------------------------
     def add_xp(self, amount: int) -> int:
         self.conn.execute("UPDATE player SET xp = xp + ? WHERE id = 1", (amount,))
@@ -299,15 +334,21 @@ class Database:
             for r in self.conn.execute("SELECT date, amount, reason, habit_id FROM xp_log ORDER BY id")
         ]
         badges = [dict(r) for r in self.list_badges()]
+        weekly_quests = [
+            {"week": q["week"], "habit_ids": json.loads(q["habit_ids"]), "target": q["target"],
+             "completed": bool(q["completed"]), "rewarded": bool(q["rewarded"])}
+            for q in self.list_weekly_quests()
+        ]
         row = self.conn.execute("SELECT xp, coins, shields FROM player WHERE id=1").fetchone()
         return {"version": 1, "player": {"xp": row["xp"], "coins": row["coins"], "shields": row["shields"]},
                 "habits": habits, "checkins": checkins, "freezes": freezes, "quests": quests,
-                "xp_log": xp_log, "badges": badges}
+                "weekly_quests": weekly_quests, "xp_log": xp_log, "badges": badges}
 
     def import_data(self, data: dict) -> None:
         self.conn.execute("DELETE FROM checkins")
         self.conn.execute("DELETE FROM freezes")
         self.conn.execute("DELETE FROM quests")
+        self.conn.execute("DELETE FROM weekly_quests")
         self.conn.execute("DELETE FROM xp_log")
         self.conn.execute("DELETE FROM badges")
         self.conn.execute("DELETE FROM habits")
@@ -325,6 +366,12 @@ class Database:
             self.conn.execute(
                 "INSERT INTO quests(month, habit_id, target, progress, damage, completed, rewarded) VALUES (?,?,?,?,?,?,?)",
                 (q["month"], q["habit_id"], q["target"], q.get("progress", 0), q.get("damage", 0),
+                 int(q.get("completed", False)), int(q.get("rewarded", False))),
+            )
+        for q in data.get("weekly_quests", []):
+            self.conn.execute(
+                "INSERT INTO weekly_quests(week, habit_ids, target, completed, rewarded) VALUES (?,?,?,?,?)",
+                (q["week"], json.dumps(q["habit_ids"]), q["target"],
                  int(q.get("completed", False)), int(q.get("rewarded", False))),
             )
         self.conn.execute("UPDATE player SET xp=? WHERE id=1", (data.get("player", {}).get("xp", 0),))

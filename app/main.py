@@ -52,6 +52,11 @@ class QuestIn(BaseModel):
     month: str | None = Field(default=None, pattern=r"^\d{4}-\d{2}$")
 
 
+class WeeklyQuestIn(BaseModel):
+    habit_ids: list[int]
+    target: int = Field(default=5, ge=1, le=7)
+
+
 class BuyIn(BaseModel):
     item: str = "shield"
     qty: int = Field(default=1, ge=1, le=10)
@@ -107,6 +112,21 @@ def create_quest(payload: QuestIn) -> dict:
 @app.get("/api/quests")
 def list_quests(month: str | None = None) -> dict:
     return {"quests": service.list_quests(get_db(), month)}
+
+
+@app.post("/api/weekly-quests")
+def create_weekly_quest(payload: WeeklyQuestIn) -> dict:
+    try:
+        return service.create_weekly_quest(get_db(), payload.habit_ids, payload.target)
+    except ValueError as e:
+        msg = str(e)
+        code = 404 if "unknown habit" in msg else 400
+        raise HTTPException(code, msg)
+
+
+@app.get("/api/weekly-quests")
+def list_weekly_quests(week: str | None = None) -> dict:
+    return {"weekly_quests": service.list_weekly_quests(get_db(), week)}
 
 
 @app.get("/api/badges")

@@ -66,3 +66,18 @@ button.cat.active { opacity:1; border-color:var(--gold); color:var(--gold); }
 /* --- 30-day streak chart --- */
 .streak-chart { padding:8px 0 6px 34px; border-bottom:1px solid #26263a; }
 .streak-chart-meta { font-size:.75rem; color:#888; margin-top:4px; }
+
+/* --- weekly quests --- */
+.weekly-quest { padding:8px 0; border-bottom:1px solid #26263a; }
+.weekly-quest:last-child { border-bottom:none; }
+.wq-head { display:flex; justify-content:space-between; font-size:.85rem; margin-bottom:6px; }
+.wq-done .wq-reward { color:var(--ok); }
+.wq-reward { color:var(--gold); }
+.wq-row { display:flex; align-items:center; gap:8px; padding:2px 0; font-size:.85rem; }
+.wq-name { flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.wq-bar { flex:1.4; height:8px; background:#2a2a3a; border-radius:5px; overflow:hidden; }
+.wq-bar > div { height:100%; background:linear-gradient(90deg,#7bd88f,#f5c542); }
+.wq-count { font-size:.75rem; color:#888; width:34px; text-align:right; }
+#new-weekly-quest { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+#new-weekly-quest select { max-width:160px; }
+.weekly-empty { color:#888; font-size:.85rem; }

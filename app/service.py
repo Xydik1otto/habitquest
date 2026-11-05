@@ -1,6 +1,7 @@
 """Service layer: orchestrates check-ins, freezes, XP and achievements."""
 from __future__ import annotations
 
+import json
 from datetime import date, timedelta
 
 from . import db, gamification as g
@@ -107,6 +108,7 @@ def checkin(database: db.Database, habit_id: int, day: str | None = None, note: 
         database.add_coins(xp_gained)  # spendable wallet (streak shield shop)
         database.log_xp(day, xp_gained, "checkin", habit_id)
         _sync_quests_for(database, habit_id, day)
+        _sync_weekly_quests_for(database, habit_id, day)
     return {
         "habit_id": habit_id,
         "date": day,
@@ -128,6 +130,7 @@ def undo_checkin(database: db.Database, habit_id: int, day: str) -> dict:
         database.add_xp(-amount)
         database.add_coins(-amount)
     _sync_quests_for(database, habit_id, day)
+    _sync_weekly_quests_for(database, habit_id, day)
     return {"removed": True, "xp_revoked": amount, "player_xp": database.xp(), "coins": database.coins()}
 
 
@@ -136,6 +139,94 @@ def _sync_quests_for(database: db.Database, habit_id: int, day: str) -> None:
     quest = database.find_quest(day[:7], habit_id)
     if quest is not None:
         _sync_quest(database, quest, day)
+
+
+# --- weekly mini-quests (3 habits × N check-ins, coin reward) -------------------
+def create_weekly_quest(
+    database: db.Database,
+    habit_ids: list[int],
+    target: int = g.WEEKLY_QUEST_TARGET,
+    today: date | None = None,
+) -> dict:
+    """Create the weekly mini-quest: 3 habits × `target` check-ins each."""
+    if (not isinstance(habit_ids, list) or len(habit_ids) != g.WEEKLY_QUEST_SIZE
+            or not all(isinstance(h, int) and not isinstance(h, bool) for h in habit_ids)
+            or len(set(habit_ids)) != len(habit_ids)):
+        raise ValueError(f"weekly quest needs {g.WEEKLY_QUEST_SIZE} distinct habit ids")
+    for hid in habit_ids:
+        if database.get_habit(hid) is None:
+            raise ValueError(f"unknown habit {hid}")
+    if not isinstance(target, int) or isinstance(target, bool) or not 1 <= target <= 7:
+        raise ValueError("target must be between 1 and 7")
+    week = g.week_key(today or date.today())
+    rows = database.list_weekly_quests(week)
+    if rows:
+        raise ValueError(f"weekly quest for {week} already exists")
+    qid = database.add_weekly_quest(week, habit_ids, target)
+    return weekly_quest_status(database, database.get_weekly_quest(qid))
+
+
+def weekly_quest_status(database: db.Database, quest, habit_by_id: dict | None = None) -> dict:
+    """Progress of a weekly quest, recomputed from this week's check-ins."""
+    ids = json.loads(quest["habit_ids"])
+    week_dates = g.iso_dates_of_week(*_iso_year_week_of_key(quest["week"]))
+    habits = habit_by_id or {h["id"]: h for h in database.list_habits()}
+    per_habit = []
+    for hid in ids:
+        h = habits.get(hid)
+        dates = database.checkin_dates(hid)
+        done = sum(1 for d in week_dates if d.isoformat() in dates)
+        per_habit.append({
+            "habit_id": hid,
+            "name": h["name"] if h else f"habit {hid}",
+            "icon": h["icon"] if h else "✅",
+            "done": done,
+        })
+    completed = all(p["done"] >= quest["target"] for p in per_habit)
+    return {
+        "id": quest["id"],
+        "week": quest["week"],
+        "target": quest["target"],
+        "habits": per_habit,
+        "completed": completed or bool(quest["completed"]),
+        "reward": g.WEEKLY_QUEST_REWARD,
+        "rewarded": bool(quest["rewarded"]),
+    }
+
+
+def _iso_year_week_of_key(week_key_str: str) -> tuple[int, int]:
+    """Parse '2026-W02' back into (iso_year, iso_week)."""
+    year, week = week_key_str.split("-W")
+    return int(year), int(week)
+
+
+def _sync_weekly_quest(database: db.Database, quest, day: str = "") -> None:
+    """Recompute completion; on first completion grant the coin reward."""
+    ids = json.loads(quest["habit_ids"])
+    week_dates = g.iso_dates_of_week(*_iso_year_week_of_key(quest["week"]))
+    completed = all(
+        sum(1 for d in week_dates if d.isoformat() in database.checkin_dates(hid)) >= quest["target"]
+        for hid in ids
+    )
+    rewarded = bool(quest["rewarded"])
+    was = bool(quest["completed"])
+    if completed and not was and not rewarded:
+        database.add_coins(g.WEEKLY_QUEST_REWARD)
+        database.log_xp(day or f"{quest['week']}", 0, "weekly_quest")
+        rewarded = True
+    # a rewarded quest stays completed even if a check-in is undone
+    database.update_weekly_quest(quest["id"], completed or was, rewarded)
+
+
+def _sync_weekly_quests_for(database: db.Database, habit_id: int, day: str) -> None:
+    quest = database.list_weekly_quests(g.week_key(date.fromisoformat(day)))
+    if quest and habit_id in json.loads(quest[0]["habit_ids"]):
+        _sync_weekly_quest(database, quest[0], day)
+
+
+def list_weekly_quests(database: db.Database, week: str | None = None, today: date | None = None) -> list[dict]:
+    week = week or g.week_key(today or date.today())
+    return [weekly_quest_status(database, q) for q in database.list_weekly_quests(week)]
 
 
 def _habit_streak(database: db.Database, habit, today: date | None = None) -> int:
@@ -294,6 +385,7 @@ def full_state(database: db.Database, today: date | None = None, category: str |
     habits = [habit_status(database, h, today) for h in database.list_habits(category)]
     return {"player": player_state(database), "habits": habits,
             "quests": list_quests(database, today=today),
+            "weekly_quests": list_weekly_quests(database, today=today),
             "badges": [dict(b) for b in database.list_badges()]}
 
 

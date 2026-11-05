@@ -16,6 +16,9 @@ CATEGORIES = ("health", "mind", "work", "home")
 BOSS_HP_PER_TARGET = 10   # boss HP = target × 10
 QUEST_BONUS_XP = 100      # one-time XP reward for slaying a monthly boss
 SHIELD_PRICE = 50         # shop price of one extra freeze token (streak shield)
+WEEKLY_QUEST_SIZE = 3     # habits in a weekly mini-quest
+WEEKLY_QUEST_TARGET = 5   # check-ins per habit per week
+WEEKLY_QUEST_REWARD = 150  # coin reward for completing the weekly quest
 
 ACHIEVEMENTS_FILE = Path(__file__).resolve().parent / "achievements.json"
 
@@ -23,6 +26,12 @@ ACHIEVEMENTS_FILE = Path(__file__).resolve().parent / "achievements.json"
 def month_key(d: date) -> str:
     """'YYYY-MM' key of a date."""
     return f"{d.year:04d}-{d.month:02d}"
+
+
+def week_key(d: date) -> str:
+    """ISO week key of a date, e.g. '2026-W02'."""
+    y, w, _ = d.isocalendar()
+    return f"{y}-W{w:02d}"
 
 
 def boss_hp(target: int) -> int:

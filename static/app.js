@@ -137,6 +137,44 @@ $("#new-quest").addEventListener("submit", async (e) => {
   } catch (err) { alert(err.message); }
 });
 
+// ---------- weekly mini-quests (3 habits × N check-ins, coin reward) ----------
+function fillHabitSelects(habits) {
+  const options = habits.map((h) => `<option value="${h.id}">${h.icon} ${h.name}</option>`).join("");
+  for (const id of ["#wq-h1", "#wq-h2", "#wq-h3"]) $(id).innerHTML = options;
+}
+
+function renderWeeklyQuests(quests) {
+  const list = $("#weekly-quests");
+  list.innerHTML = quests.length ? "" : "<div class='weekly-empty'>Ще немає квесту на цей тиждень.</div>";
+  for (const q of quests) {
+    const bars = q.habits.map((h) => {
+      const pct = Math.min(100, Math.round(100 * h.done / q.target));
+      return `<div class="wq-row" title="${h.name}: ${h.done}/${q.target}">
+        <span class="wq-name">${h.icon} ${h.name}</span>
+        <div class="wq-bar"><div style="width:${pct}%"></div></div>
+        <span class="wq-count">${h.done}/${q.target}</span></div>`;
+    }).join("");
+    const row = document.createElement("div");
+    row.className = "weekly-quest" + (q.completed ? " wq-done" : "");
+    row.innerHTML = `
+      <div class="wq-head"><span>${q.completed ? "🏆" : "📅"} ${q.week}</span>
+        <span class="wq-reward">${q.completed ? "нагорода отримана" : `нагорода ${q.reward} 💰`}</span></div>
+      ${bars}`;
+    list.appendChild(row);
+  }
+}
+
+$("#new-weekly-quest").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const ids = [parseInt($("#wq-h1").value, 10), parseInt($("#wq-h2").value, 10), parseInt($("#wq-h3").value, 10)];
+  const target = parseInt($("#wq-target").value, 10) || 5;
+  try {
+    await api("/api/weekly-quests", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ habit_ids: ids, target }) });
+    load();
+  } catch (err) { alert(err.message); }
+});
+
 // ---------- week heatmap (SVG) ----------
 function renderHeatmap(grid) {
   const cell = 18, gap = 3, labelW = 46;
@@ -243,6 +281,8 @@ async function load() {
   renderCategoryFilter();
   renderDay(state.habits);
   renderQuests(state.quests || [], state.habits);
+  fillHabitSelects(state.habits);
+  renderWeeklyQuests(state.weekly_quests || []);
   const earned = new Set(state.habits.flatMap((h) => h.achievements));
   renderHeatmap(await api("/api/heatmap?weeks=12"));
   renderStats(await api("/api/stats"), earned, (await api("/api/achievements")).all);
