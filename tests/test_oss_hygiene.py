@@ -16,8 +16,8 @@ def _tracked_files() -> list[str]:
 def test_no_private_paths_tokens_or_personal_data_in_tracked_files():
     forbidden = [r"G:\\", "G:/Projects", r"C:\\Users\\", "token ghp_", "ghp_",
                  "AKIA", "-----BEGIN", "api_key=", "password="]
-    # the maintainer's public handle in LICENSE/FUNDING.yml is intentional identity, not a leak
-    allowed_handle_files = {"LICENSE", ".github/FUNDING.yml"}
+    # the maintainer's public handle in LICENSE is intentional identity, not a leak
+    allowed_handle_files = {"LICENSE"}
     handle = "".join(chr(c) for c in (0x62, 0x69, 0x67, 0x70, 0x69))  # avoid self-flagging
     # this test file necessarily contains the needle strings — skip it in its own scan
     skip_files = {"tests/test_oss_hygiene.py"}
@@ -36,7 +36,7 @@ def test_no_private_paths_tokens_or_personal_data_in_tracked_files():
             if needle.lower() in text.lower():
                 leaks.append(f"{rel}: {needle!r}")
         if rel not in allowed_handle_files and handle in text.lower():
-            leaks.append(f"{rel}: personal handle outside LICENSE/FUNDING")
+            leaks.append(f"{rel}: personal handle outside LICENSE")
     assert not leaks, f"privacy leaks found: {leaks}"
 
 

@@ -1,5 +1,5 @@
 {
-  "_comment": "Визначення досягнень habitquest. Шаблон для Pro Pack: додайте об'єкти з полями id, name, description, metric (streak | total_checkins | gap_days), threshold.",
+  "_comment": "Визначення досягнень habitquest (кастомні досягнення). Додайте об'єкти з полями id, name, description, metric (streak | total_checkins | gap_days), threshold.",
   "achievements": [
     {
       "id": "first_checkin",
@@ -32,7 +32,7 @@
     {
       "id": "centurion",
       "name": "Центуріон",
-      "description": "100 чек-інів загалом (шаблон Pro Pack)",
+      "description": "100 чек-інів загалом (кастомне досягнення)",
       "metric": "total_checkins",
       "threshold": 100
     }

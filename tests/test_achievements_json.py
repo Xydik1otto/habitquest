@@ -1,4 +1,4 @@
-"""Tests: JSON achievement definitions (Pro-Pack templates)."""
+"""Tests: JSON achievement definitions (custom achievement templates)."""
 from datetime import date
 
 import pytest

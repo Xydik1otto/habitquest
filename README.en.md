@@ -52,7 +52,7 @@ static assets are cached (offline shell).
 - **👹 Monthly boss battle**: a monthly goal "do habit N times" → a boss with
   **HP = N×10**; every check-in deals damage equal to the XP it earned (longer streak —
   stronger hit). Victory → **+100 XP bonus** + a collectible **badge**.
-- **Achievements from JSON** (`app/achievements.json`) — templates for the Pro Pack:
+- **Achievements from JSON** (`app/achievements.json`) — custom achievements:
   add your own `{id, name, description, metric, threshold}` object via the UI editor
   and it just works.
 - **Habit categories**: 💚 health / 🧠 mind / 💼 work / 🏠 home — with UI filters.
@@ -106,7 +106,7 @@ pytest              # 179 tests
 - [x] v1.0.0: habit template library, quote of the day, hardcore mode, category stats in recap,
   i18n UA/EN, first-run demo, INSTALL.md, packaging, CSV export, a11y, open-source hygiene
 - [ ] v1.1: icon editor, dark/light theme, yearly heatmaps
-- [ ] Pro Pack (one-time): extra themes, custom achievements, yearly reports
+- [ ] v1.2: yearly reports, extra themes — free roadmap: all features are open-source
 
 ## Contributing
 

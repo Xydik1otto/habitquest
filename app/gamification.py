@@ -167,7 +167,7 @@ def last_gap_days(checkin_dates: set[str], today: date | None = None) -> int | N
     return (ds[-1] - ds[-2]).days
 
 
-# --- achievement definitions (JSON, Pro-Pack templates) -----------------------
+# --- achievement definitions (JSON, custom achievement templates) -------------
 # Schema per definition:
 #   {"id": str, "name": str, "description": str,
 #    "metric": "streak" | "total_checkins" | "gap_days",
@@ -204,7 +204,7 @@ def load_achievement_defs(path: Path | None = None) -> list[dict]:
 
 
 ACHIEVEMENTS_COMMENT = (
-    "Визначення досягнень habitquest. Шаблон для Pro Pack: додайте об'єкти з полями "
+    "Визначення досягнень habitquest (кастомні досягнення). Додайте об'єкти з полями "
     "id, name, description, metric (streak | total_checkins | gap_days), threshold."
 )
 

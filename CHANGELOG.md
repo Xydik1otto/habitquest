@@ -5,6 +5,13 @@
 Формат базується на [Keep a Changelog](https://keepachangelog.com/uk/1.1.0/)
 і дотримується [Semantic Versioning](https://semver.org/lang/uk/).
 
+## [Unreleased]
+
+### Removed
+- Монетизаційний каркас: `.github/FUNDING.yml`, усі згадки «Pro Pack» (тепер
+  «кастомні досягнення»), секцію монетизації в PLAN.md. Проєкт — 100% безкоштовний
+  open-source, усі фічі вільні.
+
 ## [1.0.0] — 2026-11-05
 
 ### Added
@@ -54,7 +61,7 @@
   (SVG-стовпчикова діаграма), монети, щити, рівень, чек-іни за 30 днів.
 - **Редактор досягнень**: UI-панель для `app/achievements.json` — додати/редагувати
   шаблон досягнення (`POST /api/achievements`, `PUT /api/achievements/{id}`) з валідацією.
-- Інфраструктура: `CHANGELOG.md`, `.github/FUNDING.yml`, favicon.svg + OG-мета,
+- Інфраструктура: `CHANGELOG.md`, favicon.svg + OG-мета,
   `scripts/smoke.sh` (smoke-тест API на випадковому порту).
 
 ## [0.3.0] — 2026-11-05
@@ -73,7 +80,7 @@
 
 ### Added
 - Бос-квести місяця (прогрес, HP = target×10, бонус XP), PWA (manifest + service worker,
-  offline shell), JSON-визначення досягнень (шаблони Pro Pack).
+  offline shell), JSON-визначення досягнень (кастомні досягнення).
 
 ## [0.1.0] — 2026-11-05
 
