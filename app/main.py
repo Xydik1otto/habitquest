@@ -112,6 +112,34 @@ def quote(date_str: str | None = None) -> dict:
         raise HTTPException(500, str(e))
 
 
+@app.get("/api/i18n")
+def i18n(lang: str | None = None) -> dict:
+    """UI strings for a language; `lang` invalid → all languages + supported list."""
+    if lang is None:
+        return {"languages": list(g.SUPPORTED_LANGS), "dict": g.load_i18n()}
+    try:
+        return {"languages": list(g.SUPPORTED_LANGS), "lang": lang, "strings": g.strings_for(lang)}
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@app.get("/api/lang")
+def get_lang() -> dict:
+    return {"lang": service.get_lang(get_db()), "languages": list(g.SUPPORTED_LANGS)}
+
+
+class LangIn(BaseModel):
+    lang: str
+
+
+@app.put("/api/lang")
+def put_lang(payload: LangIn) -> dict:
+    try:
+        return {"lang": service.set_lang(get_db(), payload.lang)}
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
 @app.delete("/api/habits/{habit_id}")
 def delete_habit(habit_id: int) -> dict:
     get_db().delete_habit(habit_id)

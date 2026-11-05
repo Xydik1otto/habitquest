@@ -84,6 +84,32 @@ function renderCategoryFilter() {
     b.addEventListener("click", () => { activeCategory = b.dataset.cat || null; load(); }));
 }
 
+function langTag() { return STR.nav_today === "Today" ? "en" : "uk"; }
+
+// ---------- i18n (UA/EN UI strings; persisted server-side) ----------
+let STR = {};  // active string dictionary
+function applyStrings(strings) {
+  STR = strings;
+  const map = {
+    "nav-today": STR.nav_today, "nav-templates": STR.nav_templates, "nav-quote": STR.nav_quote,
+    "nav-boss": STR.nav_boss, "nav-weekly": STR.nav_weekly, "nav-heatmap": STR.nav_heatmap,
+    "nav-dashboard": STR.nav_dashboard, "nav-recap": STR.nav_recap, "nav-achv": STR.nav_achievements,
+    "nav-stats": STR.nav_stats,
+  };
+  for (const [id, text] of Object.entries(map)) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+  }
+  const hname = $("#h-name"); if (hname) hname.placeholder = STR.new_habit_ph;
+  const hadd = $("#new-habit button"); if (hadd) hadd.textContent = STR.add;
+  const qbtn = $("#new-quest button"); if (qbtn) qbtn.textContent = STR.call_boss;
+  const wqbtn = $("#new-weekly-quest button"); if (wqbtn) wqbtn.textContent = STR.create;
+  const rbtn = $("#recap-load"); if (rbtn) rbtn.textContent = STR.show;
+  const abtn = $("#a-submit"); if (abtn && abtn.textContent !== STR.achv_save) abtn.textContent = STR.achv_save || abtn.textContent;
+  const exp = $("#btn-export"); if (exp) exp.textContent = STR.export;
+  document.documentElement.lang = langTag();
+}
+
 // ---------- quote of the day (local JSON, deterministic per date) ----------
 async function renderQuote() {
   const el = $("#quote-text");
@@ -447,6 +473,12 @@ $("#import-file").addEventListener("change", async (e) => {
 async function load() {
   const state = await api("/api/state" + (activeCategory ? `?category=${activeCategory}` : ""));
   settings = state.settings || settings;
+  // i18n: fetch the persisted language's strings and apply them
+  try {
+    const lang = (await api("/api/lang")).lang;
+    $("#lang-switch").value = lang;
+    applyStrings((await api(`/api/i18n?lang=${lang}`)).strings);
+  } catch (e) { /* i18n is optional chrome — keep static UA text */ }
   renderPlayer(state.player);
   renderSettings();
   renderCategoryFilter();
@@ -472,6 +504,17 @@ function renderBadges(badges) {
     ? badges.map((b) => `<span class="achv badge">${b.label}</span>`).join("")
     : "";
 }
+
+// ---------- language switcher (persisted server-side) ----------
+$("#lang-switch").addEventListener("change", async (e) => {
+  const lang = e.target.value;
+  try {
+    await api("/api/lang", { method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lang }) });
+    applyStrings((await api(`/api/i18n?lang=${lang}`)).strings);
+    load();
+  } catch (err) { alert(err.message); }
+});
 
 // ---------- PWA ----------
 if ("serviceWorker" in navigator) {

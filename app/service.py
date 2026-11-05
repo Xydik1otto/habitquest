@@ -335,6 +335,32 @@ def apply_hardcore_penalties(database: db.Database, today: date | None = None) -
     return {"enabled": True, "penalties": penalized, "xp_deducted": deducted}
 
 
+# --- i18n ------------------------------------------------------------------------
+def get_lang(database: db.Database) -> str:
+    """Persisted UI language ('uk' | 'en'); defaults to 'uk'."""
+    import json as _json
+    try:
+        stored = _json.loads(database.settings_json() or "{}")
+    except ValueError:
+        stored = {}
+    lang = stored.get(g.LANG_SETTING_KEY)
+    return lang if lang in g.SUPPORTED_LANGS else "uk"
+
+
+def set_lang(database: db.Database, lang: str) -> str:
+    """Persist the UI language; returns the effective value."""
+    if lang not in g.SUPPORTED_LANGS:
+        raise ValueError(f"unsupported language {lang!r}; expected one of {g.SUPPORTED_LANGS}")
+    import json as _json
+    try:
+        stored = _json.loads(database.settings_json() or "{}")
+    except ValueError:
+        stored = {}
+    stored[g.LANG_SETTING_KEY] = lang
+    database.save_settings_json(_json.dumps(stored))
+    return lang
+
+
 # --- settings (sound / effects) -------------------------------------------------
 def get_settings(database: db.Database) -> dict:
     """Stored settings merged over the defaults (unknown keys ignored)."""

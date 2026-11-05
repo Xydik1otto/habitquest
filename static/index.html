@@ -27,21 +27,25 @@
     <div id="xp-bar"><div id="xp-fill"></div></div>
     <span id="xp-text"></span>
   </div>
+  <select id="lang-switch" title="Мова інтерфейсу (зберігається) / UI language (persisted)" aria-label="UI language">
+    <option value="uk">🇺🇦 Українська</option>
+    <option value="en">🇬🇧 English</option>
+  </select>
 </header>
 
 <main>
   <section class="panel">
-    <h2>💬 Цитата дня</h2>
+    <h2 id="nav-quote">💬 Цитата дня</h2>
     <blockquote id="quote" class="quote"><span id="quote-text">…</span><footer id="quote-author"></footer></blockquote>
   </section>
 
   <section class="panel">
-    <h2>📚 Шаблони звичок</h2>
+    <h2 id="nav-templates">📚 Шаблони звичок</h2>
     <div id="templates" class="templates"></div>
   </section>
 
   <section class="panel">
-    <h2>Сьогодні</h2>
+    <h2 id="nav-today">Сьогодні</h2>
     <div id="cat-filter" class="cat-filter"></div>
     <div id="day-list"></div>
     <form id="new-habit">
@@ -63,7 +67,7 @@
   </section>
 
   <section class="panel">
-    <h2>🗡 Бос-бій цього місяця</h2>
+    <h2 id="nav-boss">🗡 Бос-бій цього місяця</h2>
     <div id="quest-list"></div>
     <form id="new-quest">
       <select id="q-habit" required></select>
@@ -73,7 +77,7 @@
   </section>
 
   <section class="panel">
-    <h2>📅 Тижневий квест</h2>
+    <h2 id="nav-weekly">📅 Тижневий квест</h2>
     <div id="weekly-quests"></div>
     <form id="new-weekly-quest">
       <select id="wq-h1" required></select>
@@ -85,17 +89,17 @@
   </section>
 
   <section class="panel">
-    <h2>Тиждень (heatmap)</h2>
+    <h2 id="nav-heatmap">Тиждень (heatmap)</h2>
     <div id="week-heatmap"></div>
   </section>
 
   <section class="panel">
-    <h2>📈 Дашборд (30 днів)</h2>
+    <h2 id="nav-dashboard">📈 Дашборд (30 днів)</h2>
     <div id="dashboard"></div>
   </section>
 
   <section class="panel">
-    <h2>📊 Підсумок місяця</h2>
+    <h2 id="nav-recap">📊 Підсумок місяця</h2>
     <div class="recap-controls">
       <input id="recap-month" type="month">
       <button id="recap-load">Показати</button>
@@ -104,7 +108,7 @@
   </section>
 
   <section class="panel">
-    <h2>🏆 Редактор досягнень</h2>
+    <h2 id="nav-achv">🏆 Редактор досягнень</h2>
     <div id="achv-editor-list"></div>
     <form id="achv-form">
       <input id="a-id" placeholder="id (напр. night_owl)" required maxlength="64" pattern="[a-z0-9_]+">
@@ -121,7 +125,7 @@
   </section>
 
   <section class="panel">
-    <h2>Статистика</h2>
+    <h2 id="nav-stats">Статистика</h2>
     <div id="stats"></div>
     <div id="shop" class="shop"></div>
     <div id="badges"></div>

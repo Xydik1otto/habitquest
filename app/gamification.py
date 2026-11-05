@@ -28,6 +28,9 @@ HARDCORE_LOOKBACK_DAYS = 90  # how far back missed days can be penalized
 ACHIEVEMENTS_FILE = Path(__file__).resolve().parent / "achievements.json"
 TEMPLATES_FILE = Path(__file__).resolve().parent / "templates.json"
 QUOTES_FILE = Path(__file__).resolve().parent / "quotes.json"
+I18N_FILE = Path(__file__).resolve().parent / "i18n.json"
+SUPPORTED_LANGS = ("uk", "en")
+LANG_SETTING_KEY = "lang"  # stored in player.settings (string, 'uk'|'en')
 
 
 def month_key(d: date) -> str:
@@ -322,6 +325,23 @@ def quote_of_the_day(day: date | None = None, quotes_path: Path | None = None) -
     q = quotes[d.toordinal() % len(quotes)]
     return {"date": d.isoformat(), "ua": q["ua"], "en": q["en"], "author": q["author"],
             "total": len(quotes)}
+
+
+# --- i18n (UI dictionaries, UA/EN; no Russian by design) -------------------------
+def load_i18n(path: Path | None = None) -> dict:
+    """Load the UI dictionaries {lang: {key: string}} from JSON."""
+    data = json.loads(Path(path or I18N_FILE).read_text(encoding="utf-8"))
+    dict_ = data.get("dict", {})
+    if not isinstance(dict_, dict) or set(dict_) < {"uk", "en"}:
+        raise ValueError("i18n JSON must contain 'dict' with 'uk' and 'en'")
+    return dict_
+
+
+def strings_for(lang: str, path: Path | None = None) -> dict:
+    """Flat string dictionary for a language ('uk' | 'en')."""
+    if lang not in SUPPORTED_LANGS:
+        raise ValueError(f"unsupported language {lang!r}; expected one of {SUPPORTED_LANGS}")
+    return load_i18n(path)[lang]
 
 
 # --- heat map -----------------------------------------------------------------
