@@ -398,7 +398,7 @@ def recap(database: db.Database, month: str | None = None, today: date | None = 
     earned, spent = database.xp_flow_in_month(month)
     counts_by_habit = database.checkin_counts_by_habit_in_month(month)
 
-    per_category = {c: {"checkins": 0, "habits": 0} for c in g.CATEGORIES}
+    per_category = {c: {"checkins": 0, "habits": 0, "xp": 0, "share": 0} for c in g.CATEGORIES}
     top_habits = []
     for h in database.list_habits():
         n = counts_by_habit.get(h["id"], 0)
@@ -407,6 +407,13 @@ def recap(database: db.Database, month: str | None = None, today: date | None = 
             per_category[h["category"]]["checkins"] += n
             if n:
                 per_category[h["category"]]["habits"] += 1
+    xp_by_cat = database.xp_by_category_in_month(month)
+    for cat, xp in xp_by_cat.items():
+        if cat in per_category:
+            per_category[cat]["xp"] = xp
+    total_checkins = sum(counts_by_habit.values())
+    for cat, v in per_category.items():
+        v["share"] = round(100 * v["checkins"] / total_checkins, 1) if total_checkins else 0
     top_habits.sort(key=lambda x: -x["checkins"])
 
     # weekly buckets (ISO weeks that overlap the month, clipped to it)

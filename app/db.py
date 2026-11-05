@@ -316,6 +316,17 @@ class Database:
         ).fetchone()
         return row["earned"], row["spent"]
 
+    def xp_by_category_in_month(self, month: str) -> dict[str, int]:
+        """Check-in XP earned per habit category within 'YYYY-MM'."""
+        rows = self.conn.execute(
+            """SELECT h.category AS cat, COALESCE(SUM(x.amount), 0) AS xp
+               FROM xp_log x JOIN habits h ON h.id = x.habit_id
+               WHERE x.reason='checkin' AND substr(x.date, 1, 7)=?
+               GROUP BY h.category""",
+            (month,),
+        ).fetchall()
+        return {r["cat"]: r["xp"] for r in rows}
+
     def checkin_counts_by_habit_in_month(self, month: str) -> dict[int, int]:
         rows = self.conn.execute(
             "SELECT habit_id, COUNT(*) AS n FROM checkins WHERE substr(date, 1, 7)=? GROUP BY habit_id",

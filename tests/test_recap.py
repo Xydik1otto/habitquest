@@ -69,7 +69,7 @@ def test_recap_per_category_and_top_habits(database):
     assert r["per_category"]["health"]["checkins"] == 3
     assert r["per_category"]["health"]["habits"] == 1
     assert r["per_category"]["mind"]["checkins"] == 1
-    assert r["per_category"]["work"] == {"checkins": 0, "habits": 0}
+    assert r["per_category"]["work"] == {"checkins": 0, "habits": 0, "xp": 0, "share": 0}
     assert r["top_habits"][0] == {"id": gym, "name": "Gym", "icon": "🏋", "checkins": 3}
 
 

@@ -324,9 +324,10 @@ function renderHeatmap(grid) {
 function renderRecap(r) {
   const maxWeek = Math.max(1, ...r.weeks.map((w) => w.count));
   const cats = Object.entries(r.per_category)
-    .filter(([, v]) => v.checkins > 0)
-    .map(([k, v]) => `${CAT_LABELS[k]}: <b>${v.checkins}</b>`)
-    .join(" · ") || "—";
+    .map(([k, v]) => v.checkins
+      ? `${CAT_LABELS[k]}: <b>${v.checkins}</b> (${v.share}%, ${v.xp} XP)`
+      : `${CAT_LABELS[k]}: —`)
+    .join(" · ");
   const bars = r.weeks.map((w) =>
     `<div class="rbar" title="${w.week}: ${w.count}"><div style="height:${Math.round(100 * w.count / maxWeek)}%"></div><span>${w.week.slice(5)}</span></div>`).join("");
   $("#recap").innerHTML = `
